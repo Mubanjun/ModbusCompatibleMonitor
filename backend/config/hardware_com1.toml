@@ -1,0 +1,55 @@
+# 真机联调：通过 HHD 虚拟串口 COM1（别名到物理 COM3）访问主机
+[server]
+bind = "127.0.0.1:8790"
+ws_push_frames = true
+
+[device]
+sn = "JDRK-QXZ-0001"
+name = "水质监控主机（HHD COM1 路由）"
+location = "联调现场"
+
+[poll]
+enabled = true
+interval_ms = 10000
+round_timeout_ms = 9000
+per_channel_retry = 0
+
+[storage]
+sqlite_path = "data/hardware_com1.db"
+buffer_enabled = true
+
+[forward]
+enabled = false
+
+[[forward.targets]]
+name = "mysql_main"
+enabled = false
+url = "mysql://monitor_rw:change_me@127.0.0.1:3306/env_monitor"
+table = "tb_sensor_data"
+
+[debug]
+frame_log_capacity = 4000
+frame_log_enabled = true
+
+[[links]]
+name = "hhd_com1"
+kind = "wired"
+port = "COM1"
+baud = 9600
+data_bits = 8
+parity = "none"
+stop_bits = 1
+response_timeout_ms = 500
+frame_gap_ms = 10
+silence_ms = 200
+recv_mode = "silence"
+retries = 3
+retry_interval_ms = 250
+rts_mode = "none"
+rts_active_low = false
+protocol = "rs_modbus"
+std_slave_addr = 1
+std_read_mode = "raw"
+chunk_regs = 124
+
+active_link = "hhd_com1"

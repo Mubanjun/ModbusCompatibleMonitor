@@ -1,0 +1,57 @@
+# 真机联调配置（临时通过 USB-RS485 光电隔离模块直连主机从站口）
+# 参数以 tools/probe_host.py 的实测结果为准；探测完成后我会按结果修正本文件。
+
+[server]
+bind = "127.0.0.1:8790"
+ws_push_frames = true
+
+[device]
+sn = "JDRK-QXZ-0001"
+name = "水质监控主机（真机）"
+location = "联调现场"
+
+[poll]
+enabled = true
+interval_ms = 10000
+round_timeout_ms = 9000
+per_channel_retry = 0
+
+[storage]
+sqlite_path = "data/hardware.db"
+buffer_enabled = true
+
+[forward]
+enabled = false
+
+[[forward.targets]]
+name = "mysql_main"
+enabled = false
+url = "mysql://monitor_rw:change_me@127.0.0.1:3306/env_monitor"
+table = "tb_sensor_data"
+
+[debug]
+frame_log_capacity = 4000
+frame_log_enabled = true
+
+[[links]]
+name = "hardware_485"
+kind = "wired"
+port = "COM3"
+baud = 9600
+data_bits = 8
+parity = "none"
+stop_bits = 1
+response_timeout_ms = 500
+frame_gap_ms = 10
+silence_ms = 200
+recv_mode = "silence"
+retries = 3
+retry_interval_ms = 250
+rts_mode = "none"
+rts_active_low = false
+protocol = "rs_modbus"
+std_slave_addr = 1
+std_read_mode = "raw"
+chunk_regs = 124
+
+active_link = "hardware_485"

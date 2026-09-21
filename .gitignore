@@ -1,0 +1,29 @@
+# ===== build / cache =====
+.tmp/
+.cargo-home/
+_toolcheck/
+backend/target/
+frontend/build/
+**/__pycache__/
+*.pyc
+
+# ===== runtime data =====
+backend/data/
+*.db
+*.db-wal
+*.db-shm
+*.log
+*.out
+*.err
+
+# ===== editor / os =====
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+Thumbs.db
+desktop.ini
+
+# ===== vendor package (large binaries) =====
+智能监控主机资料包/

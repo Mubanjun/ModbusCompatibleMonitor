@@ -1,0 +1,334 @@
+# ============================================================
+# JDRK 水质监控平台后端 · 默认配置
+# 所有链路参数均可在运行时通过 REST 修改并热切换（FR-09/FR-11）
+# ============================================================
+
+[server]
+bind = "127.0.0.1:8790"
+ws_push_frames = true
+
+[device]
+sn = "JDRK-QXZ-0001"
+name = "水质监控主机"
+location = "1号监测点"
+protocol = "rs_modbus"
+
+[poll]
+enabled = true
+interval_ms = 10000          # FR-01：10 s 轮询周期
+round_timeout_ms = 9000
+per_channel_retry = 0
+retention_days = 365
+
+[storage]
+sqlite_path = "data/monitor.db"
+buffer_enabled = true
+
+[forward]
+enabled = false
+interval_ms = 5000
+batch_size = 200
+max_attempts = 10
+
+[[forward.targets]]
+name = "mysql_main"
+enabled = false
+url = "mysql://monitor_rw:change_me@127.0.0.1:3306/env_monitor"
+table = "tb_sensor_data"
+
+[debug]
+frame_log_capacity = 2000
+frame_log_enabled = true
+
+# ------------------------------------------------------------
+# 链路档案（FR-11：一键切换 485 直连 / LoRa 电台）
+# ------------------------------------------------------------
+[[links]]
+name = "debug_485"
+kind = "wired"
+port = "COM3"
+baud = 9600                  # 实测值；说明书写的 4800 是错的
+data_bits = 8
+parity = "none"
+stop_bits = 1
+response_timeout_ms = 300
+frame_gap_ms = 10
+silence_ms = 200
+recv_mode = "silence"        # 实测：按长度收帧会失败，必须静默 + CRC 收帧
+retries = 3
+retry_interval_ms = 250
+rts_mode = "flip"            # 该 USB-485 适配器必须翻转 RTS 控制收发方向
+rts_active_low = false
+protocol = "rs_modbus"       # rs_modbus | std_modbus
+std_slave_addr = 1
+std_read_mode = "raw"        # raw | processed
+chunk_regs = 124
+
+[[links]]
+name = "lora_dr206l"
+kind = "lora"
+port = "COM4"
+baud = 115200
+data_bits = 8
+parity = "none"
+stop_bits = 1
+response_timeout_ms = 3000
+frame_gap_ms = 80
+silence_ms = 400
+recv_mode = "silence"
+retries = 2
+retry_interval_ms = 500
+rts_mode = "auto"
+rts_active_low = false
+protocol = "rs_modbus"
+std_slave_addr = 1
+std_read_mode = "raw"
+chunk_regs = 124
+
+active_link = "debug_485"
+
+# ------------------------------------------------------------
+# 通道档案（20 路水质传感器；可在界面编辑，FR-07）
+# 现场按实际接线把 name/unit/sensor_model/coef 改成实际值。
+# 常见水质型号换算见 docs/水质传感器寄存器速查.md
+# ------------------------------------------------------------
+[[channels]]
+no = 1
+name = "通道1"
+unit = ""
+sensor_model = ""
+data_type = "ai1"
+coef_a = 1.0
+coef_b = 0.0
+decimals = 2
+enabled = true
+slave_addr = 1
+
+[[channels]]
+no = 2
+name = "通道2"
+unit = ""
+sensor_model = ""
+data_type = "ai1"
+coef_a = 1.0
+coef_b = 0.0
+decimals = 2
+enabled = true
+slave_addr = 2
+
+[[channels]]
+no = 3
+name = "通道3"
+unit = ""
+sensor_model = ""
+data_type = "ai1"
+coef_a = 1.0
+coef_b = 0.0
+decimals = 2
+enabled = true
+slave_addr = 3
+
+[[channels]]
+no = 4
+name = "通道4"
+unit = ""
+sensor_model = ""
+data_type = "ai1"
+coef_a = 1.0
+coef_b = 0.0
+decimals = 2
+enabled = true
+slave_addr = 4
+
+[[channels]]
+no = 5
+name = "通道5"
+unit = ""
+sensor_model = ""
+data_type = "ai1"
+coef_a = 1.0
+coef_b = 0.0
+decimals = 2
+enabled = true
+slave_addr = 5
+
+[[channels]]
+no = 6
+name = "通道6"
+unit = ""
+sensor_model = ""
+data_type = "ai1"
+coef_a = 1.0
+coef_b = 0.0
+decimals = 2
+enabled = true
+slave_addr = 6
+
+[[channels]]
+no = 7
+name = "通道7"
+unit = ""
+sensor_model = ""
+data_type = "ai1"
+coef_a = 1.0
+coef_b = 0.0
+decimals = 2
+enabled = true
+slave_addr = 7
+
+[[channels]]
+no = 8
+name = "通道8"
+unit = ""
+sensor_model = ""
+data_type = "ai1"
+coef_a = 1.0
+coef_b = 0.0
+decimals = 2
+enabled = true
+slave_addr = 8
+
+[[channels]]
+no = 9
+name = "通道9"
+unit = ""
+sensor_model = ""
+data_type = "ai1"
+coef_a = 1.0
+coef_b = 0.0
+decimals = 2
+enabled = true
+slave_addr = 9
+
+[[channels]]
+no = 10
+name = "通道10"
+unit = ""
+sensor_model = ""
+data_type = "ai1"
+coef_a = 1.0
+coef_b = 0.0
+decimals = 2
+enabled = true
+slave_addr = 10
+
+[[channels]]
+no = 11
+name = "通道11"
+unit = ""
+sensor_model = ""
+data_type = "ai1"
+coef_a = 1.0
+coef_b = 0.0
+decimals = 2
+enabled = true
+slave_addr = 11
+
+[[channels]]
+no = 12
+name = "通道12"
+unit = ""
+sensor_model = ""
+data_type = "ai1"
+coef_a = 1.0
+coef_b = 0.0
+decimals = 2
+enabled = true
+slave_addr = 12
+
+[[channels]]
+no = 13
+name = "通道13"
+unit = ""
+sensor_model = ""
+data_type = "ai1"
+coef_a = 1.0
+coef_b = 0.0
+decimals = 2
+enabled = true
+slave_addr = 13
+
+[[channels]]
+no = 14
+name = "通道14"
+unit = ""
+sensor_model = ""
+data_type = "ai1"
+coef_a = 1.0
+coef_b = 0.0
+decimals = 2
+enabled = true
+slave_addr = 14
+
+[[channels]]
+no = 15
+name = "通道15"
+unit = ""
+sensor_model = ""
+data_type = "ai1"
+coef_a = 1.0
+coef_b = 0.0
+decimals = 2
+enabled = true
+slave_addr = 15
+
+[[channels]]
+no = 16
+name = "通道16"
+unit = ""
+sensor_model = ""
+data_type = "ai1"
+coef_a = 1.0
+coef_b = 0.0
+decimals = 2
+enabled = true
+slave_addr = 16
+
+[[channels]]
+no = 17
+name = "通道17"
+unit = ""
+sensor_model = ""
+data_type = "ai1"
+coef_a = 1.0
+coef_b = 0.0
+decimals = 2
+enabled = true
+slave_addr = 17
+
+[[channels]]
+no = 18
+name = "通道18"
+unit = ""
+sensor_model = ""
+data_type = "ai1"
+coef_a = 1.0
+coef_b = 0.0
+decimals = 2
+enabled = true
+slave_addr = 18
+
+[[channels]]
+no = 19
+name = "通道19"
+unit = ""
+sensor_model = ""
+data_type = "ai1"
+coef_a = 1.0
+coef_b = 0.0
+decimals = 2
+enabled = true
+slave_addr = 19
+
+[[channels]]
+no = 20
+name = "通道20"
+unit = ""
+sensor_model = ""
+data_type = "ai1"
+coef_a = 1.0
+coef_b = 0.0
+decimals = 2
+enabled = true
+slave_addr = 20
+

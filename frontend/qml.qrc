@@ -1,0 +1,16 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/Main.qml</file>
+        <file>qml/Theme.qml</file>
+        <file>qml/components/ChannelCard.qml</file>
+        <file>qml/components/LineChart.qml</file>
+        <file>qml/components/StatusPill.qml</file>
+        <file>qml/components/AppButton.qml</file>
+        <file>qml/pages/DashboardPage.qml</file>
+        <file>qml/pages/HistoryPage.qml</file>
+        <file>qml/pages/AlarmPage.qml</file>
+        <file>qml/pages/ChannelConfigPage.qml</file>
+        <file>qml/pages/LinkPage.qml</file>
+        <file>qml/pages/DebugPage.qml</file>
+    </qresource>
+</RCC>
