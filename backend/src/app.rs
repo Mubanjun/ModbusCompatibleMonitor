@@ -49,15 +49,40 @@ pub async fn run(config_path: &str, bind_override: Option<String>) -> anyhow::Re
     Ok(())
 }
 
-/// 收到 Ctrl+C 时优雅停机：关闭串口并退出，避免端口被占用/进程卡死。
+/// 收到退出信号时优雅停机：关闭串口并退出，避免端口被占用/进程卡死。
+///
+/// Windows：Ctrl+C / 控制台关闭事件（另有 serial/win.rs 的 SetConsoleCtrlHandler 兜底）。
+/// Linux/macOS：SIGINT 与 SIGTERM —— systemd 的 `systemctl stop` 发的是 SIGTERM，
+/// 若只监听 SIGINT，服务停止会退化为直接杀进程（串口虽由内核回收，但拿不到优雅路径）。
 fn spawn_shutdown_handler(state: Arc<AppState>) {
     tokio::spawn(async move {
-        if tokio::signal::ctrl_c().await.is_ok() {
-            tracing::info!("收到退出信号，正在关闭串口…");
-            state.link.shutdown().await;
-            std::process::exit(0);
-        }
+        let sig = wait_shutdown_signal().await;
+        tracing::info!(signal = sig, "收到退出信号，正在关闭串口…");
+        state.link.shutdown().await;
+        std::process::exit(0);
     });
+}
+
+#[cfg(unix)]
+async fn wait_shutdown_signal() -> &'static str {
+    use tokio::signal::unix::{signal, SignalKind};
+    match signal(SignalKind::terminate()) {
+        Ok(mut term) => tokio::select! {
+            _ = tokio::signal::ctrl_c() => "SIGINT",
+            _ = term.recv() => "SIGTERM",
+        },
+        Err(e) => {
+            tracing::warn!(error = %e, "注册 SIGTERM 处理失败，仅监听 SIGINT");
+            let _ = tokio::signal::ctrl_c().await;
+            "SIGINT"
+        }
+    }
+}
+
+#[cfg(not(unix))]
+async fn wait_shutdown_signal() -> &'static str {
+    let _ = tokio::signal::ctrl_c().await;
+    "Ctrl+C / 控制台关闭"
 }
 
 fn spawn_frame_capture(state: Arc<AppState>) {

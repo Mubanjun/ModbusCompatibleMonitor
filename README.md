@@ -17,6 +17,7 @@
 | `docs/` | 需求、实测协议、后端接口、串口健壮性修复等文档 |
 | `probe/` | 通讯探测脚本与实测数据（含 `hardware_result.json`） |
 | `tools/` | 构建/运行/停机/验证脚本、crates 本地代理、串口探测 |
+| `packaging/` | 部署打包：Linux `.deb`/`.rpm`、Windows Inno Setup 安装程序（见 `packaging/README.md`） |
 
 ## 关键文档
 
@@ -65,6 +66,25 @@ powershell -ExecutionPolicy Bypass -File tools\run-frontend.ps1
 - 提供 `POST /api/shutdown` 与 `tools/stop-backend.ps1`：
   **停止服务请用优雅停机，不要用任务管理器强杀**（强杀可能让 USB-CDC 驱动锁住端口，需拔插模块）。
 
+## 部署打包
+
+面向「其他电脑上安装」的打包脚本在 `packaging/`：
+
+| 平台 | 命令 | 产物 |
+| --- | --- | --- |
+| Debian / Ubuntu | `./packaging/linux/build-package.sh` | `jdrk-monitor_<版本>_<架构>.deb` |
+| Fedora / RHEL | `./packaging/linux/build-package.sh --formats rpm` | `jdrk-monitor-<版本>-<release>.rpm` |
+| Windows 10/11 | `.\packaging\windows\build-installer.ps1` | `JDRK-Monitor-<版本>-setup.exe` |
+
+- Linux：安装为 systemd 服务（`/usr/lib/systemd/system/jdrk-monitor.service`），
+  配置在 `/etc/jdrk-monitor/config.toml`（conffile），数据在 `/var/lib/jdrk-monitor`；
+  安装脚本自动创建 `jdrk-monitor` 用户并加入串口组，服务监听 `SIGTERM` 优雅释放串口。
+- Windows：Inno Setup 安装程序（组件可选 GUI/文档），后端以**开机计划任务**托管
+  （后端未实现 SCM 接口，`New-Service` 会报 1053），配置与数据在 `%ProgramData%\JDRK`。
+- 前后端可分离部署：上位机用 `--server http://<主机>:8790` 或环境变量 `JDRK_SERVER` 连接远端。
+
+细节与排错见 `packaging/README.md`。
+
 ## 许可证
 
-待定（如无特殊要求建议 MIT）。
+MIT，见 `LICENSE`（版权署名如需调整请直接改该文件）。

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=JDRK 水质监控平台
+GenericName=Water Quality Monitor
+Comment=RS-QXZ-M / RS-XJZ 环境监控主机采集与监控上位机
+Exec=jdrk-monitor-ui
+Terminal=false
+Categories=Utility;Science;Monitor;
+StartupNotify=true
+Keywords=Modbus;RS485;水质;监控;

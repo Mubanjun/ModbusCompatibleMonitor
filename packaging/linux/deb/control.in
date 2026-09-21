@@ -1,0 +1,13 @@
+Package: jdrk-monitor
+Version: @VERSION@
+Section: utils
+Priority: optional
+Architecture: @ARCH@
+Depends: @DEPENDS@
+Maintainer: @MAINTAINER@
+Homepage: @URL@
+Description: @SUMMARY@
+ @DESC@
+ 后端为常驻服务（采集 / SQLite 缓冲 / MySQL 回传 / REST+WebSocket 接口），
+ 可选安装 Qt6 QML 上位机（jdrk-monitor-ui，可连接本机或远端后端）。
+ 安装后服务自动启用并启动，配置见 /etc/jdrk-monitor/config.toml。

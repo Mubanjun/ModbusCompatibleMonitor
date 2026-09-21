@@ -1,0 +1,41 @@
+# JDRK 水质监控平台 · systemd 服务单元
+# 安装位置：/usr/lib/systemd/system/jdrk-monitor.service
+[Unit]
+Description=JDRK 水质监控平台后端（RS-QXZ-M / RS-XJZ Modbus 采集）
+Documentation=file:/usr/share/doc/jdrk-monitor/部署说明.md
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=jdrk-monitor
+Group=jdrk-monitor
+WorkingDirectory=/var/lib/jdrk-monitor
+Environment=RUST_LOG=info
+ExecStart=/usr/bin/jdrk-monitor --config /etc/jdrk-monitor/config.toml
+
+# 优雅停机：后端注册了 SIGTERM 处理，收到后先关闭串口再退出，
+# 避免 USB-485 驱动因进程被强杀而锁死端口（详见 docs/串口健壮性修复说明.md）
+KillSignal=SIGTERM
+TimeoutStopSec=20
+
+# 串口未接入/被占用时后端自身会重连，不会退出；这里只在进程异常退出时重启
+Restart=on-failure
+RestartSec=5
+
+# 由 systemd 创建并授权数据/日志目录（等价于 /var/lib/jdrk-monitor、/var/log/jdrk-monitor）
+StateDirectory=jdrk-monitor
+LogsDirectory=jdrk-monitor
+UMask=0027
+
+# 轻量加固：只允许写数据目录，其它路径只读
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/jdrk-monitor /var/log/jdrk-monitor
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

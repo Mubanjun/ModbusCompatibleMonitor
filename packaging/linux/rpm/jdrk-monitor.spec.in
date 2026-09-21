@@ -1,0 +1,98 @@
+# JDRK 水质监控平台 · RPM spec 模板
+# 由 packaging/linux/build-package.sh 生成实际 spec（替换 @VERSION@ 等占位符）
+# 产物为宿主机预编译的二进制，本 spec 只做打包与脚本注册。
+
+%global debug_package %{nil}
+%global _missing_doc_files_terminate_build 0
+%{!?_unitdir:%global _unitdir /usr/lib/systemd/system}
+%{!?_bindir:%global _bindir /usr/bin}
+%{!?_datadir:%global _datadir /usr/share}
+
+Name:           jdrk-monitor
+Version:        @VERSION@
+Release:        @RELEASE@%{?dist}
+Summary:        @SUMMARY@
+License:        @LICENSE@
+URL:            @URL@
+Requires:       systemd
+@QT_REQUIRES@
+
+%description
+@DESC@
+
+%prep
+# 无需解包：二进制由宿主机 cargo / qmake 预编译
+
+%build
+# 无编译步骤（见 %install）
+
+%install
+rm -rf %{buildroot}
+mkdir -p %{buildroot}
+cp -a %{_jdrk_stage}/. %{buildroot}/
+
+%files
+%config(noreplace) /etc/jdrk-monitor/config.toml
+%{_bindir}/jdrk-monitor
+%{_unitdir}/jdrk-monitor.service
+%doc %{_datadir}/doc/jdrk-monitor/*
+%{_datadir}/jdrk-monitor/examples/*
+@UI_FILES@
+
+%post
+SVC_USER="jdrk-monitor"
+DATA_DIR="/var/lib/jdrk-monitor"
+LOG_DIR="/var/log/jdrk-monitor"
+
+if ! getent group "$SVC_USER" >/dev/null 2>&1; then
+  groupadd --system "$SVC_USER" >/dev/null 2>&1 || true
+fi
+if ! getent passwd "$SVC_USER" >/dev/null 2>&1; then
+  useradd --system --home-dir "$DATA_DIR" --shell /sbin/nologin \
+    --gid "$SVC_USER" "$SVC_USER" >/dev/null 2>&1 || true
+fi
+
+for grp in dialout uucp tty; do
+  if getent group "$grp" >/dev/null 2>&1; then
+    usermod -aG "$grp" "$SVC_USER" >/dev/null 2>&1 || true
+  fi
+done
+
+install -d -o "$SVC_USER" -g "$SVC_USER" -m 0750 "$DATA_DIR"
+install -d -o "$SVC_USER" -g "$SVC_USER" -m 0750 "$LOG_DIR"
+
+if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
+  systemctl daemon-reload >/dev/null 2>&1 || true
+  systemctl enable jdrk-monitor.service >/dev/null 2>&1 || true
+  if systemctl is-active --quiet jdrk-monitor.service; then
+    systemctl restart jdrk-monitor.service >/dev/null 2>&1 || true
+  else
+    systemctl start jdrk-monitor.service >/dev/null 2>&1 || true
+  fi
+fi
+
+echo "jdrk-monitor 已安装：配置文件 /etc/jdrk-monitor/config.toml，状态 systemctl status jdrk-monitor"
+
+%preun
+if [ "$1" = "0" ]; then
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsS -m 3 -X POST http://127.0.0.1:8790/api/shutdown >/dev/null 2>&1 || true
+    sleep 1
+  fi
+  if command -v systemctl >/dev/null 2>&1; then
+    systemctl stop jdrk-monitor.service >/dev/null 2>&1 || true
+  fi
+fi
+
+%postun
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl daemon-reload >/dev/null 2>&1 || true
+  if [ "$1" = "0" ]; then
+    systemctl disable jdrk-monitor.service >/dev/null 2>&1 || true
+    echo "jdrk-monitor 已卸载，采集数据保留在 /var/lib/jdrk-monitor（如需删除请手动清理）"
+  fi
+fi
+
+%changelog
+* Wed Jan 01 2025 JDRK <jdrk@example.com> - @VERSION@-@RELEASE@
+- 首次打包：后端服务 + Qt6 上位机 + systemd 单元

@@ -5,6 +5,10 @@ TARGET = jdrk-monitor-ui
 
 DEFINES += QT_DEPRECATED_WARNINGS
 
+# 前端版本号（与后端保持同一主版本，安装包脚本也可覆盖）
+isEmpty(JDRK_UI_VERSION): JDRK_UI_VERSION = 0.1.0
+DEFINES += JDRK_UI_VERSION=\\\"$$JDRK_UI_VERSION\\\"
+
 INCLUDEPATH += src
 
 SOURCES += \

@@ -41,7 +41,8 @@ class AppController : public QObject
 public:
     explicit AppController(QObject *parent = nullptr);
 
-    void start();
+    /// serverUrl 为空时使用内置默认地址；非空（来自 --server / JDRK_SERVER / QSettings）则覆盖。
+    void start(const QString &serverUrl = QString());
 
     bool connected() const { return m_connected; }
     QString baseUrl() const { return m_rest.baseUrl(); }

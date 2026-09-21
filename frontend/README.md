@@ -96,7 +96,17 @@ powershell -ExecutionPolicy Bypass -File tools\run-frontend.ps1
 ```
 
 前端默认连接 `http://127.0.0.1:8790`，对应 WebSocket `ws://127.0.0.1:8790/api/ws`。
-后端地址可在 `AppController::setBaseUrl()` 或 `app.baseUrl` 中调整。
+
+**后端地址解析优先级**（前后端分离部署时用得上）：
+
+1. 命令行 `--server/-s <url>`，例如 `jdrk-monitor-ui.exe --server http://192.168.1.10:8790`
+2. 环境变量 `JDRK_SERVER`
+3. 上次在界面「链路管理」页里切换过的地址（`QSettings` 持久化）
+4. 内置默认 `http://127.0.0.1:8790`
+
+界面里通过 `app.baseUrl`（`AppController::setBaseUrl`）切换时会自动重连 REST + WebSocket
+并写入 QSettings。运行日志写到用户数据目录的 `jdrk-ui.log`
+（Windows `%LOCALAPPDATA%\JDRK\...`，Linux `~/.local/share/...`），同时输出到 stderr。
 
 运行所需环境变量（`run-frontend.ps1` 已代设）：
 

@@ -2,6 +2,7 @@
 
 #include <QDateTime>
 #include <QJsonObject>
+#include <QSettings>
 #include <QTimer>
 #include <QUrl>
 
@@ -11,8 +12,11 @@ AppController::AppController(QObject *parent)
     m_channels.ensureChannels(20);
 }
 
-void AppController::start()
+void AppController::start(const QString &serverUrl)
 {
+    if (!serverUrl.isEmpty())
+        m_rest.setBaseUrl(serverUrl);
+
     connect(&m_rest, &RestClient::finished, this, &AppController::onRest);
     connect(&m_ws, &WsClient::textMessage, this, &AppController::onWsText);
     connect(&m_ws, &WsClient::opened, this, [this]() {
@@ -51,6 +55,9 @@ void AppController::setBaseUrl(const QString &url)
     if (m_rest.baseUrl() == url)
         return;
     m_rest.setBaseUrl(url);
+    // 记住所选后端地址，下次启动直接使用（Windows 注册表 / Linux ~/.config）
+    QSettings settings;
+    settings.setValue(QStringLiteral("server/baseUrl"), url);
     emit baseUrlChanged();
     m_ws.close();
     QString wsUrl = url;

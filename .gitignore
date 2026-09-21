@@ -23,6 +23,10 @@ frontend/*.pdb
 frontend/*.ilk
 frontend/*.exp
 
+# ===== 打包中间产物 / 安装包输出 =====
+packaging/build/
+packaging/dist/
+
 # ===== 运行期数据 =====
 backend/data/
 *.db
