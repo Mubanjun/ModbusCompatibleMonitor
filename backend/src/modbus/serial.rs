@@ -128,7 +128,7 @@ pub(crate) fn device_path(port: &str) -> String {
     if port.starts_with('\\') {
         port.to_string()
     } else {
-        format!("\\.\{}", port)
+        format!("\\\\.\\{}", port)
     }
 }
 

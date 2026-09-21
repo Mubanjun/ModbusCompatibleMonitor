@@ -1,0 +1,47 @@
+# TCP 中转 + 卡死演练配置（后端只连 TCP，不碰任何硬件）
+[server]
+bind = "127.0.0.1:8790"
+ws_push_frames = true
+
+[device]
+sn = "SIM-TCP-0001"
+name = "TCP 中转模拟主机"
+location = "lab"
+
+[poll]
+enabled = true
+interval_ms = 5000
+round_timeout_ms = 3000
+
+[storage]
+sqlite_path = "data/tcp_stall.db"
+buffer_enabled = true
+
+[forward]
+enabled = false
+
+[[forward.targets]]
+name = "mysql_main"
+enabled = false
+url = "mysql://monitor_rw:change_me@127.0.0.1:3306/env_monitor"
+table = "tb_sensor_data"
+
+[debug]
+frame_log_capacity = 4000
+frame_log_enabled = true
+
+[[links]]
+name = "tcp_relay"
+kind = "tcp"
+port = "127.0.0.1:8901"
+response_timeout_ms = 200
+frame_gap_ms = 5
+silence_ms = 80
+recv_mode = "silence"
+retries = 1
+retry_interval_ms = 100
+rts_mode = "none"
+protocol = "rs_modbus"
+chunk_regs = 124
+
+active_link = "tcp_relay"
