@@ -18,7 +18,7 @@
 
 ## 1. 目录结构
 
-`@
+```
 frontend/
   jdrk-frontend.pro        qmake 工程文件
   qml.qrc                  QML 资源清单
@@ -45,7 +45,7 @@ frontend/
       ChannelConfigPage.qml 通道配置
       LinkPage.qml         链路管理
       DebugPage.qml        报文调试台
-`@
+```
 
 ---
 
@@ -53,9 +53,9 @@ frontend/
 
 ### 2.1 Windows（本机已验证）
 
-`@powershell
+```powershell
 powershell -ExecutionPolicy Bypass -File tools\build-frontend.ps1
-`@
+```
 
 脚本会：设置 Qt/MinGW 的 PATH、把 `TEMP` 指到工作区内、预置 `.qmake.stash`，然后执行 `qmake + mingw32-make`。
 
@@ -65,11 +65,11 @@ powershell -ExecutionPolicy Bypass -File tools\build-frontend.ps1
 
 ### 2.2 Linux
 
-`@bash
+```bash
 cd frontend
 mkdir -p build && cd build
 qmake ../jdrk-frontend.pro && make -j4      # 或使用 CMake（2.3）
-`@
+```
 
 Linux 下 qmake 的编译器探测正常，无需 stash。
 
@@ -84,27 +84,27 @@ Linux 下 qmake 的编译器探测正常，无需 stash。
 
 1. 先启动后端（真机或模拟器）：
 
-`@powershell
+```powershell
 # 模拟器（无硬件）
 powershell -ExecutionPolicy Bypass -File tools\run-backend.ps1 -Config config\simulator.toml
-`@
+```
 
 2. 再启动前端：
 
-`@powershell
+```powershell
 powershell -ExecutionPolicy Bypass -File tools\run-frontend.ps1
-`@
+```
 
 前端默认连接 `http://127.0.0.1:8790`，对应 WebSocket `ws://127.0.0.1:8790/api/ws`。
 后端地址可在 `AppController::setBaseUrl()` 或 `app.baseUrl` 中调整。
 
 运行所需环境变量（`run-frontend.ps1` 已代设）：
 
-`@text
+```text
 PATH            含 C:\Qt\Qt6.11.0\6.11.0\mingw_64\bin 与 Tools\mingw1310_64\bin
 QML2_IMPORT_PATH  C:\Qt\Qt6.11.0\6.11.0\mingw_64\qml
 QT_PLUGIN_PATH    C:\Qt\Qt6.11.0\6.11.0\mingw_64\plugins
-`@
+```
 
 ---
 

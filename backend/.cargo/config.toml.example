@@ -1,0 +1,18 @@
+# ============================================================
+# cargo 源镜像配置模板（复制为同目录下的 config.toml 后使用）
+#
+# 本机 Windows 的 schannel 不可用，cargo 直连 https 会失败；
+# 需要配合 tools/local_crates_proxy.py 提供的本地 HTTP 稀疏索引代理：
+#
+#   1) 启动代理：  python tools/local_crates_proxy.py 8787
+#   2) 复制本文件： copy backend\.cargo\config.toml.example backend\.cargo\config.toml
+#   3) 构建：      cargo build
+#
+# 若你的网络正常（Linux / 可直连 crates.io），**不要**使用本配置。
+# ============================================================
+
+[source.crates-io]
+replace-with = "localproxy"
+
+[source.localproxy]
+registry = "sparse+http://127.0.0.1:8787/index/"

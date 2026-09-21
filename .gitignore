@@ -1,13 +1,29 @@
-# ===== build / cache =====
+# ===== 构建产物 / 缓存 =====
 .tmp/
 .cargo-home/
 _toolcheck/
 backend/target/
 frontend/build/
+frontend/release/
+frontend/debug/
 **/__pycache__/
 *.pyc
 
-# ===== runtime data =====
+# ===== qmake / Qt 生成物（就地构建时） =====
+.qmake.stash
+frontend/Makefile
+frontend/Makefile.Debug
+frontend/Makefile.Release
+frontend/*.o
+frontend/moc_*.cpp
+frontend/moc_predefs.h
+frontend/qrc_*.cpp
+frontend/ui_*.h
+frontend/*.pdb
+frontend/*.ilk
+frontend/*.exp
+
+# ===== 运行期数据 =====
 backend/data/
 *.db
 *.db-wal
@@ -16,7 +32,15 @@ backend/data/
 *.out
 *.err
 
-# ===== editor / os =====
+# ===== 本机环境相关（勿提交，模板见 backend/.cargo/config.toml.example）=====
+backend/.cargo/config.toml
+
+# ===== 第三方资料 / 导出内容（版权与体积原因，仅本地保留）=====
+智能监控主机资料包/
+_source_extract/
+probe/strings.txt
+
+# ===== 编辑器 / 系统 =====
 .vs/
 .vscode/
 .idea/
@@ -24,6 +48,3 @@ backend/data/
 *.user
 Thumbs.db
 desktop.ini
-
-# ===== vendor package (large binaries) =====
-智能监控主机资料包/

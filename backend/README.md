@@ -43,7 +43,7 @@ RS-QXZ-M / RS-XJZ 系列水质监控主机的采集后端。按《需求与架�
 
 ## 2. 模块结构
 
-`@
+```
 backend/
   Cargo.toml               依赖与 release profile（lto/strip）
   config/
@@ -69,7 +69,7 @@ backend/
       transport.rs         串口传输（RTS 换向 + 静默收帧）
       link.rs              链路线程（独占串口、重试、事件）
       sim.rs               内置从站模拟器
-`@
+```
 
 ### 2.1 关键设计
 
@@ -94,24 +94,25 @@ backend/
 且 DSH 沙箱不允许写 `%USERPROFILE%\.cargo`。因此仓库内置了两件工具：
 
 - `tools/local_crates_proxy.py`：用 Python(OpenSSL) 把 crates.io 稀疏索引与下载代理到 `http://127.0.0.1:8787`，供 cargo 走明文 HTTP。
+- `backend/.cargo/config.toml`：指向该本地代理的**本机专用**配置（已被 .gitignore 排除）；模板见 **`backend/.cargo/config.toml.example`**，新机器按需复制。
 - `tools/run-backend.ps1`：自动设置 `CARGO_HOME`、启动代理、把 Qt 自带 MinGW 加入 PATH，然后 `cargo run`。
 
 > Linux / 正常联网的 Windows 无需这些，直接用系统 cargo 即可（本项目依赖均为跨平台 crate）。
 
-`@powershell
+```powershell
 # Windows 一键运行（真机）
 powershell -ExecutionPolicy Bypass -File tools\run-backend.ps1 -Config config\default.toml
 
 # 无硬件自测（内置模拟器）
 powershell -ExecutionPolicy Bypass -File tools\run-backend.ps1 -Config config\simulator.toml
-`@
+```
 
-`@bash
+```bash
 # Linux / 通用
 cd backend
 cargo build --release
 ./target/release/jdrk-monitor --config config/default.toml --bind 0.0.0.0:8790
-`@
+```
 
 ### 3.2 首次构建注意事项
 
@@ -137,7 +138,7 @@ cargo build --release
 
 链路档案字段：
 
-`@toml
+```toml
 [[links]]
 name = "debug_485"
 kind = "wired"            # wired | lora | simulator
@@ -158,7 +159,7 @@ protocol = "rs_modbus"    # rs_modbus | std_modbus
 std_slave_addr = 1
 std_read_mode = "raw"     # raw | processed
 chunk_regs = 124
-`@
+```
 
 > 实测：单次读寄存器数 ≥ 125 时设备响应字节数会回绕，配置 `chunk_regs ≤ 124`。
 
@@ -182,19 +183,19 @@ REST 与 WebSocket 的完整定义见 `docs/后端API与WebSocket协议.md`。�
 
 ## 6. MySQL 目标库
 
-`@bash
+```bash
 mysql -uroot -p < schema/001_init.sql
 # 创建账号（不要指定 mysql_native_password，MySQL 8.4 已禁用）
 # CREATE USER 'monitor_rw'@'%' IDENTIFIED BY '<强密码>';
 # GRANT SELECT,INSERT,UPDATE,DELETE ON env_monitor.* TO 'monitor_rw'@'%';
-`@
+```
 
 数据库可用 Docker 起一个本地实例：
 
-`@bash
+```bash
 docker run -d --name jdrk-mysql -e MYSQL_ROOT_PASSWORD=root -p 3307:3306 mysql:8.4
 docker exec -i jdrk-mysql mysql -uroot -proot < schema/001_init.sql
-`@
+```
 
 然后在配置里把 `[forward].enabled = true`，目标 `url` 指向该实例。
 

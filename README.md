@@ -30,22 +30,22 @@
 
 ### 后端（无硬件：内置从站模拟器）
 
-`@powershell
+```powershell
 powershell -ExecutionPolicy Bypass -File tools\run-backend.ps1 -Config config\simulator.toml
-`@
+```
 
 ### 后端（真机：经 HHD 虚拟串口 COM1 路由到物理 COM3）
 
-`@powershell
+```powershell
 backend\target\debug\jdrk-monitor.exe --config config\hardware_com1.toml
-`@
+```
 
 ### 前端
 
-`@powershell
+```powershell
 powershell -ExecutionPolicy Bypass -File tools\build-frontend.ps1
 powershell -ExecutionPolicy Bypass -File tools\run-frontend.ps1
-`@
+```
 
 ## 实测要点（详见文档）
 

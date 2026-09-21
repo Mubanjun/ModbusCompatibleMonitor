@@ -26,19 +26,19 @@
 | GET | `/api/version` | 名称与版本 |
 | GET | `/api/stats` | 行数、发件箱、活动告警、轮次、最近一轮、链路状态 |
 
-`@json
+```json
 // GET /api/health
 {"ok":true,"version":"0.1.0","uptime_s":29,"link_connected":true,"link_profile":"sim","rows":80,"outbox":0}
-`@
+```
 
-`@json
+```json
 // GET /api/stats
 {
   "rows": 80, "outbox": 0, "active_alarms": 0, "rounds": 4,
   "last_round": {"round_id":4,"elapsed_ms":90,"total":20,"ok":20,"fail":0,"avg_rtt_ms":0},
   "link": {"profile":"sim","kind":"simulator","connected":true,"ok_count":80,"last_error":null}
 }
-`@
+```
 
 ### 1.2 配置与通道
 
@@ -49,12 +49,12 @@
 | PUT | `/api/channels` | 通道数组 | 整体替换 |
 | PUT | `/api/channels/{no}` | 部分字段 | 更新单个通道 |
 
-`@json
+```json
 // PUT /api/channels/1
 {"name":"溶解氧","unit":"mg/L","sensor_model":"RS-LDO-N01-2",
  "data_type":"f32","coef_a":1.0,"coef_b":0.0,"decimals":2,
  "upper_limit":12.0,"lower_limit":2.0,"enabled":true,"slave_addr":1}
-`@
+```
 
 ### 1.3 数据查询
 
@@ -66,11 +66,11 @@
 
 采样对象：
 
-`@json
+```json
 {"record_time":"2026-09-20T22:18:12.372+08:00","device_sn":"SIM-QXZ-0001",
  "channel_no":1,"channel_name":"通道1","unit":"","value":23.0,"raw_value":230,
  "quality":"ok","rtt_ms":4}
-`@
+```
 
 `quality` 取值：`ok / timeout / crc_error / illegal_addr / slave_fault / scaling / disabled / no_data`。
 
@@ -100,13 +100,13 @@
 | POST | `/api/debug/read` | `{"addr":1,"start":0,"count":2}` | 读寄存器 |
 | POST | `/api/debug/write` | `{"addr":1,"reg":690,"value":0}` | 写单寄存器 |
 
-`@json
+```json
 // POST /api/debug/scan
 {"ok":true,"online":2,"results":[
   {"addr":1,"online":true,"regs":[658,-101]},
   {"addr":2,"online":false,"quality":"timeout","error":"无应答（超时）"}
 ]}
-`@
+```
 
 ### 1.7 告警
 
@@ -128,9 +128,9 @@
 
 ### 2.1 连接
 
-`@text
+```text
 ws://127.0.0.1:8790/api/ws
-`@
+```
 
 连接建立后服务端**立即**下发一条 `hello`。
 
@@ -149,20 +149,20 @@ ws://127.0.0.1:8790/api/ws
 | `forward` | 回传状态变化 | `target` `connected` `pending` `sent_total` `failed_total` `last_error` |
 | `notice` | 提示 | `level` `message` |
 
-`@json
+```json
 {"type":"sample","record_time":"2026-09-20T22:18:12.372+08:00","device_sn":"SIM-QXZ-0001",
  "channel_no":1,"channel_name":"通道1","unit":"","value":23.0,"raw_value":230,"quality":"ok","rtt_ms":4}
-`@
+```
 
-`@json
+```json
 {"type":"round","round_id":4,"started_at":"2026-09-20T22:18:12.372+08:00",
  "elapsed_ms":90,"total":20,"ok":20,"fail":0,"avg_rtt_ms":0}
-`@
+```
 
-`@json
+```json
 {"type":"frame","at":"2026-09-20T22:18:12.376+08:00","direction":"tx","addr":1,"func":3,
  "bytes":"01 03 00 00 00 02 C4 0B","rtt_ms":null,"quality":null,"note":"第 1/2 次"}
-`@
+```
 
 ### 2.3 客户端 → 服务端命令
 

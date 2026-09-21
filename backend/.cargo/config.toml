@@ -1,8 +1,0 @@
-# 本机 Windows schannel 不可用，cargo 无法直连 HTTPS。
-# 这里改用 tools/local_crates_proxy.py 提供的本地 HTTP 稀疏索引代理。
-# 启动代理： python tools/local_crates_proxy.py 8787
-[source.crates-io]
-replace-with = "localproxy"
-
-[source.localproxy]
-registry = "sparse+http://127.0.0.1:8787/index/"
