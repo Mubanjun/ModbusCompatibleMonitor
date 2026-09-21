@@ -38,6 +38,7 @@ backend/.cargo/config.toml
 # ===== 第三方资料 / 导出内容（版权与体积原因，仅本地保留）=====
 智能监控主机资料包/
 _source_extract/
+docs/
 probe/strings.txt
 
 # ===== 编辑器 / 系统 =====
