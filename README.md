@@ -93,6 +93,7 @@ cd backend && ./gradlew check
   - [设备模板规范](docs/v2/03-设备模板规范.md)
   - [部署与前后端分离](docs/v2/04-部署与前后端分离.md)
   - [迁移与实施计划](docs/v2/05-迁移与实施计划.md)
+  - [SRS v2 变更稿](docs/v2/06-SRS-v2变更稿.md)
 
 ## 安全说明
 
