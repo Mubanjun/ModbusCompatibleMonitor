@@ -94,6 +94,7 @@ cd backend && ./gradlew check
   - [部署与前后端分离](docs/v2/04-部署与前后端分离.md)
   - [迁移与实施计划](docs/v2/05-迁移与实施计划.md)
   - [SRS v2 变更稿](docs/v2/06-SRS-v2变更稿.md)
+  - [2 周 PoC 计划](docs/v2/07-PoC计划.md)
 
 ## 安全说明
 
