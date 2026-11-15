@@ -14,15 +14,17 @@ databaseChangeLog:
   # 业务域表结构（采集端口 / 设备 / 通道）
   - include:
       file: db/changelog/mysql/biz_table.sql
-  # V1.4 分组树、对象化传感器、位置字段与地图配置
-  - include:
-      file: db/changelog/mysql/biz_v14_group_sensor.sql
   # 业务域：设备模板与采集顺序、报警规则/记录/通知
   - include:
       file: db/changelog/mysql/biz_collect_alarm.sql
   # 业务域：上报配置、同步任务、系统配置与看门狗日志
+  # 注意：biz_sys_config 在本文件创建，必须先于 biz_v14_group_sensor.sql 执行，
+  # 否则全新数据库首次启动时 v14-6 的地图默认配置会因表不存在而失败。
   - include:
       file: db/changelog/mysql/biz_report_sync_sys.sql
+  # V1.4 分组树、对象化传感器、位置字段与地图配置
+  - include:
+      file: db/changelog/mysql/biz_v14_group_sensor.sql
   # 业务域菜单与权限
   - include:
       file: db/changelog/mysql/biz_data.sql
