@@ -87,6 +87,8 @@ third-party/continew-admin/
 !/docs/需求实现核查表.md
 !/docs/技术方案-前后端分离与多机接入-讨论稿.md
 !/docs/开源底座选型与魔改方案.md
+!/docs/v2/
+!/docs/v2/**
 
 # 工具：仅保留可复用的 Docker 构建脚本
 /tools/*
