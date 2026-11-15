@@ -1,0 +1,7 @@
+// 设备模型：要素类型、量程与缩放字典、通道配置与取值
+dependencies {
+    api project(':jdrk-common')
+    api project(':jdrk-protocol')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

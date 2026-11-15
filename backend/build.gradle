@@ -1,0 +1,278 @@
+plugins {
+    id 'base'
+    alias(libs.plugins.spring.boot) apply false
+    alias(libs.plugins.spotless) apply false
+    alias(libs.plugins.spotbugs) apply false
+}
+
+// 与 Maven 的 groupId 对齐；上游用 ${revision}，这里显式固定
+allprojects {
+    group = 'top.continew.admin'
+    version = '4.2.0-jdrk.1-SNAPSHOT'
+
+    repositories {
+        mavenCentral()
+        maven { url = 'https://maven.aliyun.com/repository/public' }
+    }
+}
+
+// ============================ 门禁一：构建环境与依赖卫生 ============================
+// 对应上游 Maven Enforcer 的 requireMavenVersion / requireJavaVersion /
+// banDuplicatePomDependencyVersions / enforceBytecodeVersion 四条规则。
+// Maven 版本规则在 Gradle 下替换为 Gradle 版本规则。
+tasks.register('verifyEnvironment') {
+    group = 'verification'
+    description = '构建环境与依赖卫生检查（对应上游 Maven Enforcer 门禁）'
+
+    // 配置期捕获，避免执行期访问 Task.project（Gradle 10 将报错）
+    def allProjects = subprojects
+
+    doLast {
+        def problems = []
+
+        // 1) Gradle 版本：须为 9.x
+        def gradleVersion = gradle.gradleVersion
+        if (!(gradleVersion ==~ /^9\..*/)) {
+            problems << "Gradle 版本不满足要求：需要 9.x，当前为 ${gradleVersion}"
+        }
+
+        // 2) JDK 版本：须为 21 及以上
+        def javaVersion = JavaVersion.current()
+        if (!javaVersion.isCompatibleWith(JavaVersion.VERSION_21)) {
+            problems << "JDK 版本不满足要求：需要 21 及以上，当前为 ${javaVersion}"
+        }
+
+        // 3) 重复依赖声明：同一模块在同一项目内不得声明多个版本
+        allProjects.each { p ->
+            def declared = [:].withDefault { [] as Set }
+            p.configurations.each { c ->
+                c.dependencies.each { d ->
+                    if (d instanceof ExternalModuleDependency && d.version) {
+                        declared["${d.group}:${d.name}"] << d.version
+                    }
+                }
+            }
+            declared.each { key, versions ->
+                if (versions.size() > 1) {
+                    problems << "${p.path} 重复声明依赖 ${key}，存在多个版本：${versions}"
+                }
+            }
+        }
+
+        // 4) 依赖字节码版本（enforceBytecodeVersion）下放到各模块的 verifyDependencyBytecode 任务：
+        //    Gradle 9 不允许从一个项目解析另一个项目的配置，故由各模块检查自身运行时类路径
+
+        if (!problems.isEmpty()) {
+            throw new GradleException("Enforcer 门禁未通过：\n  - " + problems.join("\n  - "))
+        }
+        logger.lifecycle("[Enforcer] 构建环境与依赖卫生检查通过（Gradle ${gradleVersion} / JDK ${javaVersion}）")
+    }
+}
+
+subprojects {
+    apply plugin: 'java-library'
+
+    // ============================ 依赖安全加固（NFR-SEC-06） ============================
+    // 依据 docs/依赖与漏洞扫描报告.md（扫描发布包内全部运行时构件）+ docs/依赖漏洞处置记录.md：
+    //   1) 本平台用 Tomcat（请求线程 http-nio-8000-exec-*），Undertow 是多余的第二个容器实现，
+    //      且扫描命中「Multipart GET 拒绝服务」公告（该版本暂无修复），直接排除；
+    //   2) tlog 的规则引擎 QLExpress（连带 commons-lang 2.4）在平台里没有任何引用，
+    //      留着只会带上一条「无界递归」公告，一并排除。
+    configurations.configureEach {
+        exclude group: 'io.undertow'
+        exclude group: 'com.alibaba', module: 'QLExpress'
+    }
+
+    // ============================ 依赖版本加固（NFR-SEC-06） ============================
+    // 依据扫描结果（docs/依赖与漏洞扫描报告.md）把命中公告且**已有修复版本**的构件顶到修复版：
+    //   1) Tomcat 10.1.55 → 10.1.58（3 条 CRITICAL：DIGEST/FORM 鉴权绕过、访问控制），本项目真正的 HTTP 容器；
+    //   2) Netty 4.1.135 → 4.1.137.Final（14 条公告，含 SNI 路由绕过 CRITICAL），Redisson/AWS SDK 使用；
+    //   3) freemarker 2.3.34 → 2.3.35（CRITICAL 模板加载路径穿越）；
+    //   4) bcprov-jdk18on 1.80.2 → 1.85（CRITICAL 名称约束绕过 + HIGH 嵌套深度绕过）；
+    //   5) log4j-api 2.24.3 → 2.25.5（MODERATE：非有限浮点编码）；
+    //   6) fory-core 0.13.0 → 1.1.0（CRITICAL 反序列化），由 snail-job 调度客户端引入；
+    // 没有修复版本的（fastjson 1.2.83、jackson-databind 2.22.0）在处置记录里逐条写明缓解措施。
+    configurations.configureEach {
+        resolutionStrategy {
+            // 版本取 Maven Central 上该分支的实际可用版本（公告给的修复版本 10.1.58 未发布，实际是 10.1.59）
+            force 'org.apache.tomcat.embed:tomcat-embed-core:10.1.59',
+                'org.apache.tomcat.embed:tomcat-embed-el:10.1.59',
+                'org.apache.tomcat.embed:tomcat-embed-websocket:10.1.59',
+                'org.freemarker:freemarker:2.3.35',
+                'org.bouncycastle:bcprov-jdk18on:1.86',
+                'org.bouncycastle:bcutil-jdk18on:1.86',
+                'org.apache.logging.log4j:log4j-api:2.25.5',
+                'org.apache.logging.log4j:log4j-to-slf4j:2.25.5',
+                'org.apache.fory:fory-core:1.1.0'
+            eachDependency { details ->
+                if (details.requested.group == 'io.netty') {
+                    details.useVersion '4.1.138.Final'
+                }
+            }
+        }
+    }
+    // 门禁二：代码格式（Spotless）；门禁三：代码规范（Checkstyle）；门禁四：字节码缺陷（SpotBugs）
+    apply plugin: 'com.diffplug.spotless'
+    apply plugin: 'checkstyle'
+    apply plugin: 'com.github.spotbugs'
+
+    configurations.configureEach {
+        // dom4j 把 xpp3 声明为 optional，Maven 不传递、Gradle 会传递。
+        // xpp3 自带 META-INF/services/javax.xml.parsers.SAXParserFactory，会顶掉 JDK 的 SAX 实现，
+        // 导致 Logback 解析 logback-spring.xml 时报 SAXNotRecognizedException。显式排除以对齐 Maven 行为。
+        exclude group: 'xpp3', module: 'xpp3'
+        exclude group: 'pull-parser', module: 'pull-parser'
+    }
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        // 对应 maven-compiler-plugin 的 -parameters
+        options.compilerArgs.addAll(['-parameters'])
+    }
+
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+    }
+
+    // ---------------- 门禁二：Spotless（对应上游 spotless-maven-plugin check） ----------------
+    // 自有模块（jdrk-*）使用本项目版权头，基座模块沿用上游版权头
+    def licenseHeader = name.startsWith('jdrk-')
+        ? rootProject.file('style/license-header-jdrk')
+        : rootProject.file('style/license-header')
+    spotless {
+        java {
+            target 'src/*/java/**/*.java'
+            // 步骤顺序与上游一致：格式化 -> 清理 import -> 去行尾空白 -> 补 License Header
+            toggleOffOn()
+            eclipse().configFile(rootProject.file('style/ocn-eclipse-formatter.xml'))
+            removeUnusedImports()
+            trimTrailingWhitespace()
+            licenseHeaderFile(licenseHeader)
+        }
+    }
+
+    // ---------------- 门禁三：Checkstyle（对应上游 maven-checkstyle-plugin check） ----------------
+    checkstyle {
+        toolVersion = libs.versions.checkstyle.get()
+        configFile = rootProject.file('style/ocn-checkstyle.xml')
+        ignoreFailures = false
+        showViolations = true
+        // checkstyle 插件会为 main 与 test 两个源集分别建任务，
+        // 对应上游 maven-checkstyle-plugin 的 includeTestSourceDirectory=true
+    }
+    tasks.withType(Checkstyle).configureEach {
+        reports {
+            xml.required = true
+            html.required = true
+        }
+    }
+
+    // ---------------- 门禁四：SpotBugs（对应上游 spotbugs-maven-plugin check） ----------------
+    spotbugs {
+        // 上游 effort=Max、threshold=High
+        toolVersion.set(libs.versions.spotbugs.get())
+        effort.set(com.github.spotbugs.snom.Effort.valueOf('MAX'))
+        // Confidence 由 Kotlin 编译，常量与编译器生成的嵌套类同名（Confidence$HIGH），
+        // 在 Groovy 中 Confidence.HIGH 会被解析成嵌套类，必须用 valueOf
+        reportLevel.set(com.github.spotbugs.snom.Confidence.valueOf('HIGH'))
+        excludeFilter.set(rootProject.file('style/ocn-spotbugs-exclude.xml'))
+        ignoreFailures.set(false)
+    }
+    tasks.withType(com.github.spotbugs.snom.SpotBugsTask).configureEach {
+        reports {
+            xml.required = false
+            html.required = true
+        }
+    }
+
+    // ---------------- 门禁一（续）：依赖字节码版本 ----------------
+    // 对应上游 Enforcer 的 enforceBytecodeVersion 规则。
+    // Gradle 9 禁止跨项目解析配置，因此由各模块检查自身的运行时类路径。
+    tasks.register('verifyDependencyBytecode') {
+        group = 'verification'
+        description = '校验依赖构件的字节码版本不高于 Java 17'
+
+        // 配置期捕获，避免执行期访问 Task.project（Gradle 10 将报错）
+        def currentProjectPath = project.path
+        def runtimeClasspath = configurations.findByName('runtimeClasspath')
+        if (runtimeClasspath != null) {
+            // 声明为任务输入，使配置在受锁保护的前提下解析
+            inputs.files(runtimeClasspath)
+        }
+
+        doLast {
+            def maxMajor = 61 // Java 17
+            def problems = []
+            def checked = 0
+            if (runtimeClasspath != null && runtimeClasspath.canBeResolved) {
+                runtimeClasspath.incoming.artifactView { it.lenient(true) }.artifacts.each { artifact ->
+                    // 只检查外部引入的第三方构件。本项目各模块由自己的工具链编译（Java 21），
+                    // 不属于「引入高于 Java 17 的构件」这一规则要拦的对象。
+                    if (artifact.id.componentIdentifier instanceof org.gradle.api.artifacts.component.ProjectComponentIdentifier) {
+                        return
+                    }
+                    def f = artifact.file
+                    if (!f.name.endsWith('.jar') || !f.isFile()) {
+                        return
+                    }
+                    checked++
+                    new java.util.zip.ZipFile(f).withCloseable { zf ->
+                        def entry = zf.entries().find { e ->
+                            e.name.endsWith('.class') && !e.name.startsWith('META-INF/')
+                        }
+                        if (entry != null) {
+                            def head = zf.getInputStream(entry).readNBytes(8)
+                            if (head.length >= 8) {
+                                int major = ((head[6] & 0xFF) << 8) | (head[7] & 0xFF)
+                                if (major > maxMajor) {
+                                    problems << "依赖 ${f.name} 的字节码版本为 Java ${major - 44}，高于允许的 Java 17"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (!problems.isEmpty()) {
+                throw new GradleException("${currentProjectPath} 依赖字节码版本检查未通过：\n  - " + problems
+                    .join("\n  - "))
+            }
+            logger.lifecycle("[Enforcer] ${currentProjectPath} 已检查 ${checked} 个依赖构件（上限 Java 17）")
+        }
+    }
+
+    // 让 build 覆盖 Enforcer 门禁
+    tasks.named('check') {
+        dependsOn rootProject.tasks.named('verifyEnvironment')
+        dependsOn 'verifyDependencyBytecode'
+    }
+
+    dependencies {
+        // 版本平台必须逐配置声明：annotationProcessor / compileOnly 不继承 implementation 的约束
+        def boms = [
+            platform("top.continew.starter:continew-starter-dependencies:${libs.versions.continewStarter.get()}"),
+            platform("org.springframework.boot:spring-boot-dependencies:${libs.versions.springBoot.get()}"),
+        ]
+        implementation boms
+        compileOnly boms
+        annotationProcessor boms
+        runtimeOnly boms
+        testImplementation boms
+        testCompileOnly boms
+        testAnnotationProcessor boms
+        testRuntimeOnly boms
+
+        // 对应 Maven 根 POM 的全局依赖：hutool-all + lombok
+        implementation 'cn.hutool:hutool-all'
+
+        compileOnly 'org.projectlombok:lombok'
+        annotationProcessor 'org.projectlombok:lombok'
+        testCompileOnly 'org.projectlombok:lombok'
+        testAnnotationProcessor 'org.projectlombok:lombok'
+    }
+}

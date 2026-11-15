@@ -1,0 +1,61 @@
+# 本地开发基础设施：只起 MySQL + Redis
+#
+# 凭据与 backend/continew-server/src/main/resources/config/application-dev.yml 的默认值一致：
+#   MySQL 127.0.0.1:3306  库 continew_admin  root / 123456
+#   Redis 127.0.0.1:6379  密码 123456      db 0
+#
+# 表结构由 ContiNew 自带的 Liquibase 在应用启动时自动创建，无需手工导 SQL。
+#
+# 用法：
+#   docker compose -f backend/docker/dev-infra.yml up -d
+#   docker compose -f backend/docker/dev-infra.yml ps
+#   docker compose -f backend/docker/dev-infra.yml down
+#
+# 注意：Docker Desktop 换成 Docker VMM 后不支持 bind mount 自动共享，
+# 因此这里用命名卷而不是宿主机目录挂载，避免 "file is not shared from the host"。
+
+services:
+  mysql:
+    image: mysql:8.0.42
+    container_name: jdrk-mysql
+    restart: unless-stopped
+    ports:
+      - '3306:3306'
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: '123456'
+      MYSQL_DATABASE: continew_admin
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+      - --explicit_defaults_for_timestamp=true
+      - --lower_case_table_names=1
+    volumes:
+      - jdrk-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-uroot', '-p123456']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7.2.8
+    container_name: jdrk-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    environment:
+      TZ: Asia/Shanghai
+    command: ['redis-server', '--requirepass', '123456', '--appendonly', 'yes']
+    volumes:
+      - jdrk-redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', '123456', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  jdrk-mysql-data:
+  jdrk-redis-data:

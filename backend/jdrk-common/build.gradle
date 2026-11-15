@@ -1,0 +1,6 @@
+// 通用工具：CRC16-Modbus 校验、十六进制与字节序处理
+// 纯 Java 实现，不依赖 Spring，便于单测与复用
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

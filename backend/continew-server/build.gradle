@@ -1,0 +1,192 @@
+plugins {
+    alias(libs.plugins.spring.boot)
+}
+
+dependencies {
+    implementation project(':continew-system')
+    implementation project(':continew-plugin:continew-plugin-open')
+    implementation project(':continew-plugin:continew-plugin-tenant')
+    implementation project(':continew-plugin:continew-plugin-schedule')
+    implementation project(':continew-plugin:continew-plugin-generator')
+
+    // 仁科协议与设备模型
+    implementation project(':jdrk-device')
+    implementation project(':jdrk-predict')
+
+    implementation 'top.continew.starter:continew-starter-trace'
+    implementation 'org.liquibase:liquibase-core'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+springBoot {
+    mainClass = 'top.continew.admin.ContiNewAdminApplication'
+}
+
+tasks.named('bootJar') {
+    archiveFileName = 'continew-admin.jar'
+    // jaxb-core 会以 org.glassfish.jaxb:jaxb-core 与 com.sun.xml.bind:jaxb-core 两个坐标
+    // 解析出同名 jar，Maven 打包时默认取其一，Gradle 需显式指定去重策略
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+// 上游 Maven 构建默认跳过单元测试（surefire skip=true），这里保持一致；
+// 但自研进程管理器（watchdog 包）的配置解析/命令组装测试是纯 POJO、不依赖 Spring 上下文与数据库，
+// 必须真的跑起来——否则「ProcessManagerConfigTest 5 个用例」只是写在文档里的空话。
+tasks.named('test') {
+    enabled = true
+    include '**/watchdog/**'
+}
+
+// ===================== 前端资源打进后端包 =====================
+// 现场只发一个 jar（另加 runtime/），界面从 http://<主机IP>:8000 直接出，不需要现场再装 nginx。
+// 前端由 tools/build-all.ps1 先构建到 frontend/dist（该脚本已把前端排在后端之前），
+// 这里把它并入 classpath:/static/，交由 Spring Boot 默认静态资源处理器托管。
+// 目录不存在时 Gradle 会忽略这段来源，因此单独执行 gradlew bootJar 不会失败。
+tasks.named('processResources') {
+    // src/main/resources/static 下有一份占位 favicon.ico（与前端 public/favicon.ico 同一份文件），
+    // 两处都进 static/ 会撞同名；统一由前端产物提供，这里排除占位图。
+    exclude 'static/favicon.ico'
+    from(new File(rootProject.projectDir.parentFile, 'frontend/dist')) {
+        into 'static'
+    }
+}
+
+// ===================== NFR-COMPAT-03：随包携带精简运行时 =====================
+// 目标机免装 JDK：用 jlink 只挑运行必需的模块，生成与 jar 同包的 runtime/ 镜像。
+// 模块清单不是拍脑袋来的，来源与取舍：
+//   1) jdeps --multi-release 21 --ignore-missing-deps --print-module-deps
+//      分析 bootJar 的 BOOT-INF/classes 与全部 367 个依赖 jar，得到
+//      java.base/java.desktop/java.instrument/java.management/java.net.http/java.prefs/
+//      java.rmi/java.scripting/java.security.jgss/java.security.sasl/java.sql.rowset/
+//      java.xml.crypto/jdk.attach/jdk.compiler/jdk.dynalink/jdk.httpserver/jdk.jdi/
+//      jdk.jfr/jdk.unsupported（证据见 _extract/jdeps-modules.txt）；
+//   2) jdk.compiler 仅被 lombok（编译期注解处理器）引用，运行期永不加载 → 剔除，
+//      单此一项即省下约 10MB；
+//   3) 反射与 SPI 路径 jdeps 静态分析看不到，按运行时需要补入：
+//      java.naming（JNDI/Spring 查找）、java.logging（Liquibase 等库的 JUL 兜底）、
+//      java.sql/java.xml（驱动与 XML 解析显式声明）、java.transaction.xa（连接池 XA）、
+//      jdk.crypto.ec（TLS 的 ECC 套件，MySQL/MQTT 加密链路需要）、jdk.zipfs（jar 内
+//      文件系统）、jdk.management（com.sun.management MXBean，内存/磁盘自检用）。
+// 最终以「用镜像里的 java 真的把后端跑起来并跑通回归」为准（verify_bundled_runtime.ps1）。
+final List<String> JLINK_MODULES = [
+    'java.base',
+    'java.desktop',
+    'java.instrument',
+    'java.logging',
+    'java.management',
+    'java.naming',
+    'java.net.http',
+    'java.prefs',
+    'java.rmi',
+    'java.scripting',
+    'java.security.jgss',
+    'java.security.sasl',
+    'java.sql',
+    'java.sql.rowset',
+    'java.transaction.xa',
+    'java.xml',
+    'java.xml.crypto',
+    'jdk.attach',
+    'jdk.crypto.ec',
+    'jdk.dynalink',
+    'jdk.httpserver',
+    'jdk.jdi',
+    'jdk.jfr',
+    'jdk.management',
+    'jdk.unsupported',
+    'jdk.zipfs',
+]
+
+// 目录体积（MB，保留 1 位小数）：只用纯 Groovy/JDK，避免在 doLast 里回调 Project 方法
+def sizeMb(File dir) {
+    if (!dir.isDirectory()) {
+        return 0.0
+    }
+    long total = 0L
+    dir.eachFileRecurse { File item -> if (item.isFile()) { total += item.length() } }
+    return (total / 1024d / 1024d).round(1)
+}
+
+tasks.register('jlinkRuntime', Exec) {
+    group = 'distribution'
+    description = '用 jlink 生成精简运行时镜像（build/runtime），随发布包分发给未装 JDK 的现场机'
+
+    def outputDir = layout.buildDirectory.dir('runtime').get().asFile
+    def moduleNames = JLINK_MODULES.join(',')
+    def javaHome = System.getProperty('java.home')
+    def isWindows = System.getProperty('os.name').toLowerCase().contains('windows')
+
+    inputs.property('modules', moduleNames)
+    inputs.property('javaHome', javaHome)
+    outputs.dir(outputDir)
+
+    doFirst {
+        def jlink = new File(javaHome, 'bin/' + (isWindows ? 'jlink.exe' : 'jlink'))
+        if (!jlink.isFile()) {
+            throw new GradleException('当前 JDK 未提供 jlink，无法生成精简运行时：' + jlink)
+        }
+        // jlink 要求输出目录不存在，重复执行时先清掉旧镜像
+        if (outputDir.exists() && !outputDir.deleteDir()) {
+            throw new GradleException('无法清理旧的运行时镜像目录：' + outputDir)
+        }
+        outputDir.parentFile.mkdirs()
+        def cmd = [jlink.absolutePath, '--add-modules', moduleNames, '--output', outputDir.absolutePath,
+                   '--strip-debug', '--no-header-files', '--no-man-pages', '--compress=zip-6']
+        logger.lifecycle('[jlink] ' + cmd.join(' '))
+        commandLine cmd
+    }
+
+    doLast {
+        def javaExe = new File(outputDir, isWindows ? 'bin/java.exe' : 'bin/java')
+        if (!javaExe.isFile()) {
+            throw new GradleException('运行时镜像生成失败，缺少 java 启动器：' + javaExe)
+        }
+        logger.lifecycle('[jlink] 运行时镜像就绪：' + outputDir + '（' + sizeMb(outputDir) + ' MB，模块 '
+            + JLINK_MODULES.size() + ' 个）')
+    }
+}
+
+tasks.register('distRelease', Sync) {
+    group = 'distribution'
+    description = '组装发布包 dist/：后端 jar + 精简运行时 runtime/ + 看门狗与启停脚本'
+
+    dependsOn tasks.named('jlinkRuntime')
+    // 注意：Gradle 根工程是 backend/，发布包放在仓库根目录的 dist/，故需上跳一级
+    def repoRoot = rootProject.projectDir.parentFile
+    def distDir = new File(repoRoot, 'dist')
+    into distDir
+    // jar 与 runtime 同级：看门狗按「jar 同级 runtime/bin/java」自动识别随包运行时
+    from(tasks.named('bootJar'))
+    from(layout.buildDirectory.dir('runtime')) {
+        into 'runtime'
+    }
+    from(new File(repoRoot, 'tools')) {
+        include 'watchdog.properties'
+        include 'start-monitor.ps1'
+        include 'start-watchdog.ps1'
+        include 'stop-monitor.ps1'
+        include 'restart-monitor.ps1'
+    }
+
+    doLast {
+        // 发布包内的路径按包根目录重写，避免现场再手工改配置
+        def props = new File(distDir, 'watchdog.properties')
+        if (!props.isFile()) {
+            throw new GradleException('发布包缺少 watchdog.properties')
+        }
+        def text = props.getText('UTF-8')
+        // 旧单服务键与新多服务键都要改：配置模板已经换成 service.<n>.* 形式，
+        // 只替换 app.jar 会让发布包里的 service.1.jar 仍旧指向开发机的 build/libs 路径。
+        text = text.replace('app.jar=backend/continew-server/build/libs/continew-admin.jar',
+            'app.jar=continew-admin.jar')
+        text = text.replace('service.1.jar=backend/continew-server/build/libs/continew-admin.jar',
+            'service.1.jar=continew-admin.jar')
+        text = text.replace('app.java=java', 'app.java=runtime/bin/java')
+        text = text.replace('service.1.java=java', 'service.1.java=runtime/bin/java')
+        props.setText(text, 'UTF-8')
+        logger.lifecycle('[dist] 发布包就绪：' + distDir + '（运行时 ' + sizeMb(new File(distDir,
+            'runtime')) + ' MB）')
+    }
+}
+

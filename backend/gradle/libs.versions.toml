@@ -1,0 +1,17 @@
+[versions]
+springBoot = "3.5.16"
+continewStarter = "2.16.0"
+javaToolchain = "21"
+
+# 代码门禁工具版本，与上游 Maven 构建保持一致
+checkstyle = "11.0.0"
+spotbugs = "4.9.4"
+spotless = "8.10.2"
+
+# Gradle 插件版本（与工具版本相互独立）
+spotbugsPlugin = "6.1.7"
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+spotbugs = { id = "com.github.spotbugs", version.ref = "spotbugsPlugin" }

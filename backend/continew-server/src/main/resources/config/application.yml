@@ -1,0 +1,582 @@
+--- ### 应用配置
+application:
+  id: continew-admin
+  # 名称
+  name: ContiNew Admin
+  # 描述
+  description: 持续迭代优化的前后端分离中后台管理系统框架，开箱即用，持续提供舒适的开发体验。
+  # 版本
+  version: 4.2.0-SNAPSHOT
+  # 基本包
+  base-package: top.continew.admin
+  ## 作者信息配置
+  contact:
+    name: Charles7c
+    email: charles7c@126.com
+    url: https://charles7c.top
+  ## 许可协议信息配置
+  license:
+    name: Apache-2.0
+    url: https://github.com/continew-org/continew-admin/blob/dev/LICENSE
+
+--- ### 服务器配置
+server:
+  servlet:
+    # 应用访问路径
+    context-path: /
+  ## Undertow 服务器配置
+  undertow:
+    # HTTP POST 请求内容的大小上限（默认 -1，不限制）
+    max-http-post-size: -1
+    # 以下的配置会影响 buffer，这些 buffer 会用于服务器连接的 IO 操作，有点类似 Netty 的池化内存管理
+    # 每块 buffer的空间大小（越小的空间被利用越充分，不要设置太大，以免影响其他应用，合适即可）
+    buffer-size: 512
+    # 是否分配的直接内存（NIO 直接分配的堆外内存）
+    direct-buffers: true
+    threads:
+      # 设置 IO 线程数，它主要执行非阻塞的任务，它们会负责多个连接（默认每个 CPU 核心一个线程）
+      io: 8
+      # 阻塞任务线程池，当执行类似 Servlet 请求阻塞操作，Undertow 会从这个线程池中取得线程（它的值设置取决于系统的负载）
+      worker: 256
+
+--- ### Spring 项目配置
+spring:
+  application:
+    name: ${application.id}
+    version: ${application.version}
+  ## 环境配置
+  profiles:
+    # 启用的环境
+    active: ${PROFILES_ACTIVE:dev}
+    include:
+      - generator
+  main:
+    # 允许定义重名的 bean 对象覆盖原有的 bean
+    allow-bean-definition-overriding: true
+    # 允许循环依赖
+    allow-circular-references: true
+  ## Jackson 配置
+  jackson:
+    # 大数值序列化模式
+    # FLEXIBLE：超过 JS 范围的数值转为 String 类型，否则保持原类型
+    big-number-serialize-mode: FLEXIBLE
+
+--- ## 线程池配置（默认启用扩展配置，如未指定 corePoolSize、maxPoolSize 则根据机器配置自动设置）
+spring.task:
+  # 异步任务
+  execution:
+    thread-name-prefix: task-pool
+    # 任务拒绝策略（默认 ABORT，不执行新任务，直接抛出 RejectedExecutionException 异常）
+    # CALLER_RUNS：提交的任务在执行被拒绝时，会由提交任务的线程去执行
+    rejected-policy: CALLER_RUNS
+    pool:
+      keep-alive: 300s
+    shutdown:
+      # 是否等待任务执行完成再关闭线程池（默认 false）
+      await-termination: true
+      # 等待时间
+      await-termination-period: 30s
+  # 定时任务
+  scheduling:
+    thread-name-prefix: schedule-pool
+    # 任务拒绝策略（默认 ABORT，不执行新任务，直接抛出 RejectedExecutionException 异常）
+    # CALLER_RUNS：提交的任务在执行被拒绝时，会由提交任务的线程去执行
+    rejected-policy: CALLER_RUNS
+    shutdown:
+      # 是否等待任务执行完成再关闭线程池（默认 false）
+      await-termination: true
+      # 等待时间
+      await-termination-period: 30s
+
+--- ### 文件上传配置
+# 文件管理支持大文件直传，单文件上限与分片上传阈值（10MB）配套，属有意放宽，非配置疏漏（S5693）
+spring.servlet.multipart:
+  enabled: true
+  # 单文件上传大小限制
+  max-file-size: 10MB # NOSONAR: 直传上限需与分片阈值 10MB 保持一致
+  # 单次总上传文件大小限制
+  max-request-size: 20MB # NOSONAR: 允许一次请求携带多个分片/文件
+## 头像配置
+avatar:
+  # 存储路径
+  path: user/avatar/
+  # 支持的后缀
+  support-suffix: jpg,jpeg,png,gif
+
+--- ### 接口文档配置
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui
+  # 设置对象型参数的展示形式（设为 true 表示将对象型参数平展开，即对象内的属性直接作为参数展示而不是嵌套在对象内，默认 false）
+  # 如果不添加该全局配置，可以在需要如此处理的对象参数类上使用 @ParameterObject
+  default-flat-param-object: true
+  ## 组件配置
+  components:
+    # 鉴权配置
+    security-schemes:
+      Authorization:
+        type: HTTP
+        in: HEADER
+        name: ${sa-token.token-name}
+        scheme: ${sa-token.token-prefix}
+## 接口文档增强配置
+nextdoc4j:
+  # 启用开关
+  enabled: true
+  # 扩展配置
+  extension:
+    # 扩展开关
+    enabled: true
+    # 品牌配置
+    brand:
+      # logo 展示
+      logo: classpath:favicon.ico
+      # 标题
+      title: ${application.name}
+      # 自定义 footer 内容
+      footer-text: 'Copyright © 2022-present [${application.contact.name}](${application.contact.url})&nbsp;⋅&nbsp;[${application.name}](${application.url}) v${application.version}'
+  # 插件配置
+  plugin:
+    # 枚举展示开关
+    enum:
+      enabled: true
+    # 认证展示和 sa-token 权限码展示开关
+    security:
+      enabled: true
+
+--- ### 全局响应配置
+continew-starter.web.response:
+  # 是否开启国际化（默认：false）
+  i18n: false
+  # 自定义失败 HTTP 状态码（默认：200，建议业务和通信状态码区分）
+  default-http-status-code-on-error: 200
+  # 自定义成功响应码（默认：0）
+  default-success-code: 0
+  # 自定义成功提示（默认：ok）
+  default-success-msg: 操作成功
+  # 自定义失败响应码（默认：1）
+  default-error-code: 1
+  # 自定义失败提示（默认：error）
+  default-error-msg: 服务器异常，请联系管理员
+  # 是否将原生异常错误信息填充到状态信息中
+  origin-exception-using-detail-message: false
+  # 响应类全名（配置后 response-style 将不再生效）
+  response-class-full-name: top.continew.starter.web.model.R
+
+--- ### 日志配置
+## API 请求/响应日志配置
+continew-starter.log:
+  # 记录信息
+  includes:
+    - DESCRIPTION
+    - MODULE
+    - REQUEST_HEADERS
+    - REQUEST_BODY
+    - IP_ADDRESS
+    - BROWSER
+    - OS
+    - RESPONSE_HEADERS
+    - RESPONSE_BODY
+## 项目日志配置
+logging:
+  config: classpath:logback-spring.xml
+
+--- ### 链路追踪配置
+continew-starter.trace:
+  enabled: true
+  trace-id-name: X-Trace-Id
+  ## TLog 配置
+  tlog:
+    enable-invoke-time-print: false
+    pattern: '[$spanId][$traceId]'
+    mdc-enable: false
+
+--- ### CRUD 配置
+continew-starter.crud:
+  ## 树型字典结构映射配置（简单树，对应前端 UI）
+  tree-dict-model:
+    id-key: key
+    name-key: title
+    weight-key: sort
+
+--- ### 租户配置
+continew-starter.tenant:
+  enabled: true
+  # 隔离级别（默认：LINE，行级）
+  isolation-level: LINE
+  # 请求头中租户 ID 键名
+  tenant-id-header: X-Tenant-Id
+  # 请求头中租户编码键名
+  tenant-code-header: X-Tenant-Code
+  # 默认租户 ID：超级管理员用户所在租户（默认：0）
+  default-tenant-id: 0
+  # 忽略表（忽略拼接租户条件）
+  ignore-tables:
+    - tenant # 租户表
+    - tenant_package # 租户套餐表
+    - tenant_package_menu # 租户套餐与菜单关联表
+    - gen_config # 代码生成配置表
+    - gen_field_config # 代码生成字段配置表
+    - sys_menu # 菜单表
+    - sys_dict # 字典表
+    - sys_dict_item # 字典项表
+    - sys_option # 参数表
+    - sys_storage # 存储表
+    - sys_sms_config # 短信配置表
+    - sys_sms_log # 短信日志表
+    - sys_client # 客户端表
+    - sys_app # 应用表
+    # 业务域表：采集/上报/同步/报警等均属现场配置与运行数据，不参与租户隔离
+    - biz_port # 采集端口配置表
+    - biz_device # 采集设备配置表
+    - biz_channel # 通道与模拟量配置表
+    - biz_device_template # 设备模板表
+    - biz_collect_order # 采集顺序表
+    - biz_alarm_rule # 报警规则表
+    - biz_alarm_record # 报警记录表
+    - biz_alarm_notify # 报警通知表
+    - biz_report_target # 上报目标表
+    - biz_report_template # 上报模板表
+    - biz_report_rule # 上报规则表
+    - biz_sync_task # 同步任务表
+    - biz_sync_conflict # 同步冲突表
+    - biz_sync_watermark # 同步水位表
+    - biz_sys_config # 业务系统配置表
+    - biz_watchdog_log # 看门狗日志表
+    - biz_signal_log # 信令记录表
+    - biz_data # 采集历史数据表
+    - biz_data_latest # 通道实时值表
+    - biz_report_dead_letter # 上报死信队列表
+    - biz_relay_log # 继电器操作审计表
+    - biz_device_group # 设备分组树
+    - biz_sensor # 传感器对象
+    - biz_sensor_reading # 传感器观测值
+    - biz_role_group_scope # 角色授权分组范围
+  # 忽略菜单 ID（租户不能使用的菜单）
+  ignore-menus:
+    - 1050 # 菜单管理
+    - 1130 # 字典管理
+    - 1140 # 字典项管理
+    - 1150 # 系统配置
+    - 2050 # 短信日志
+    - 3000 # 租户管理
+    - 7000 # 能力开放
+    - 8000 # 任务调度
+    - 9000 # 开发工具
+
+--- ### 限流器配置
+continew-starter.rate-limiter:
+  enabled: true
+  key-prefix: RateLimiter
+
+--- ### Sa-Token 配置
+sa-token:
+  # Token 名称（同时也是 cookie 名称）
+  token-name: Authorization
+  # 是否启用动态 activeTimeout 功能
+  dynamic-active-timeout: true
+  ## 提示：请通过页面功能 [系统管理/系统配置/客户端配置] 动态调整下方注释的配置项
+  ## 如果不需要动态配置，请取消下方配置注释，再移除相关登录处理代码
+#  # Token 有效期（单位：秒，默认 30 天，-1 代表永不过期）
+#  timeout: 86400
+#  # Token 最低活跃频率（单位：秒，默认 -1，代表不限制，永不冻结。如果 token 超过此时间没有访问系统就会被冻结）
+#  active-timeout: 1800
+#  # 是否打开自动续签（true：每次直接或间接调用 getLoginId() 时进行一次过期检查与续签操作）
+#  auto-renew: true
+#  # 是否允许同一账号多地同时登录（true：允许；false：新登录挤掉旧登录）
+#  is-concurrent: true
+#  # 顶人下线的范围（ALL_DEVICE_TYPE：所有设备类型端）
+#  replaced-range: ALL_DEVICE_TYPE
+#  # 同一账号最大登录数量（-1：不限制，只有在 isConcurrent=true，isShare=false 时才有效）
+#  max-login-count: -1
+#  # 溢出人数的下线方式（KICKOUT：踢人下线）
+#  overflow-logout-mode: KICKOUT
+  # 在多人登录同一账号时，是否共用一个 Token（true：所有登录共用一个 Token；false：每次登录新建一个 Token）
+  # 使用 jwt-simple 模式后，is-share 恒等于 false（目前本项目使用 jwt-simple 模式，可通过 sa-token.extension.enableJwt: false 关闭并自行提供 StpLogic 配置）
+  is-share: false
+  # 是否输出操作日志
+  is-log: false
+  # JWT 秘钥
+  jwt-secret-key: asdasdasifhueuiwyurfewbfjsdafjk
+  ## 扩展配置
+  extension:
+    enabled: true
+    jwt-enabled: true
+    # 持久层配置
+    dao.type: REDIS
+
+--- ### MyBatis Plus 配置
+mybatis-plus:
+  # Mapper XML 文件目录配置
+  mapper-locations: classpath*:/mapper/**/*Mapper.xml
+  # 类型别名扫描包配置
+  type-aliases-package: ${application.base-package}.**.model
+  ## MyBatis 配置
+  configuration:
+    # MyBatis 自动映射策略
+    # NONE：不启用 PARTIAL：只对非嵌套 resultMap 自动映射 FULL：对所有 resultMap 自动映射
+    auto-mapping-behavior: PARTIAL
+    database-id: mysql
+    #database-id: pgsql
+  ## 全局配置
+  global-config:
+    banner: true
+    db-config:
+      # 主键类型（默认 assign_id，表示自行赋值）
+      # auto 代表使用数据库自增策略（需要在表中设置好自增约束）
+      id-type: ASSIGN_ID
+      # 逻辑删除字段名
+      logic-delete-field: deleted
+      # 逻辑未删除值
+      logic-not-delete-value: 0
+      # 逻辑已删除值（解决唯一索引冲突）
+      logic-delete-value: id
+  ## 扩展配置
+  extension:
+    enabled: true
+    # ID 生成器配置
+    id-generator:
+      type: COSID
+    # 分页插件配置
+    pagination:
+      enabled: true
+      db-type: MYSQL
+
+--- ### CosId 配置
+cosid:
+  namespace: ${spring.application.name}
+  ## 机器号配置
+  machine:
+    enabled: true
+    # 机器号分配器
+    distributor:
+      type: REDIS
+    guarder:
+      # 开启机器号守护
+      enabled: true
+  ## 雪花算法配置
+  snowflake:
+    enabled: true
+    zone-id: Asia/Shanghai
+    epoch: 1577203200000
+    share:
+      # 开启时钟回拨同步
+      clock-sync: true
+      converter:
+        friendly:
+          pad-start: true
+    ## 多 ID 生成器配置
+    provider:
+      # 租户编码生成器
+      tenant-code:
+        converter:
+          type: RADIX
+          prefix: T
+          radix:
+            char-size: 11
+            pad-start: true
+
+--- ### 采集运行时（数据落地与暂存）
+jdrk:
+  ## 协议传输（FR-PROTO-07）
+  protocol:
+    # 串口帧间静默（毫秒）：RS-485 半双工总线两次发送之间的最小间隔（3.5 字符时间）
+    serial-frame-gap-ms: 5
+  ## 系统运行（FR-SYS-02 单实例控制）
+  system:
+    # 是否启用单实例保护：第二个实例启动时直接报错退出，而不是等端口占用失败
+    single-instance: true
+    # 单实例锁文件路径（进程异常退出时操作系统自动释放，残留文件不影响下次启动）
+    instance-lock-path: ./data/.continew-admin.lock
+  ## 安全（NFR-SEC-04：管理端口仅回环或内网白名单）
+  security:
+    # 是否启用来源白名单：关闭表示任何来源都能访问（仅本机联调，生产不要关闭）
+    enabled: true
+    # 允许访问管理端口的 CIDR：默认只放行回环 + RFC1918 私网 + 链路本地
+    # 现场要从严时收成具体网段（例如只留 192.168.74.0/24），要放宽时再追加
+    allowed-cidrs:
+      - 127.0.0.1/32
+      - "::1/128"
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+      - 169.254.0.0/16
+      - "fe80::/10"
+      - "fc00::/7"
+    # 是否信任反向代理写入的 X-Forwarded-For：该头可伪造，默认关闭
+    trust-forwarded-for: false
+    # 是否记录放行日志（默认关闭，避免高频刷新把日志刷满）
+    log-allowed: false
+  ## 多实例与分布式锁（NFR-SCALE-04）
+  cluster:
+    # 默认关闭：单机部署行为与以前一致（本实例即主节点，采集/上报/暂存照常启动）
+    enabled: false
+    # Redis 租约键：多实例抢同一把锁，只有主节点承担采集/上报/暂存
+    lock-key: jdrk:cluster:leader
+    # 租约时长（秒）：主节点崩溃后其他实例最多等这么久接管
+    lease-seconds: 30
+    # 续租间隔（秒），必须小于租约时长
+    renew-seconds: 10
+    # 实例标识，留空自动取「主机名-pid」
+    instance-id:
+  ## 采集调度与信令
+  acquisition:
+    # 是否随应用启动自动开始采集
+    auto-start: true
+    # 调度轮询周期（毫秒）
+    tick-ms: 200
+    # 信令留痕开关（FR-SIG-05）
+    trace-enabled: true
+    # 内存信令环形缓冲容量
+    trace-buffer-size: 2000
+    # 信令批量落库批次大小与间隔
+    trace-batch-size: 200
+    trace-flush-interval-ms: 2000
+    # 信令保留时长（小时，FR-SIG-03 滚动留存）
+    trace-retain-hours: 24
+    # 单设备单轮允许发送的最大报文数
+    max-frames-per-device: 200
+  ## 报警引擎（FR-ALM）
+  alarm:
+    # 规则缓存有效期（毫秒）
+    rule-cache-millis: 10000
+    # 通知频率控制：窗口与窗口内单规则最大通知次数（FR-ALM-04）
+    notify-window-millis: 300000
+    notify-max-per-window: 5
+    # 通知失败重试次数、扫描间隔与批量
+    notify-max-retry: 3
+    notify-retry-interval-millis: 30000
+    notify-retry-batch-size: 50
+    notify-retry-backoff-millis: 60000
+  ## 上报引擎（FR-RPT）
+  report:
+    # 调度周期（毫秒）
+    tick-ms: 500
+    # 单规则内存缓冲上限与单批上限
+    max-buffer-per-rule: 100000
+    # 单批最大上报条数：实测 5000 会被卡在 ~4.0k 条/秒（每周期上限），20000 可达 5.7k 条/秒（NFR-PERF-06）
+    batch-max: 20000
+    # 上报配置缓存有效期（毫秒）
+    rule-cache-millis: 10000
+    # 死信容量上限
+    dead-letter-max: 10000
+    # MQTT 连接超时（秒）
+    mqtt-connect-timeout-seconds: 10
+    # 是否打印上报报文（排障）
+    log-payload: false
+  ## 同步引擎（FR-SYNC）
+  sync:
+    # 单批同步条数
+    batch-size: 500
+    # 并发执行的任务数上限
+    max-concurrent-tasks: 2
+    # 全量同步起始时间（早于该时间的数据不同步）
+    earliest-time: '2000-01-01 00:00:00'
+    # 是否打印每批同步日志
+    log-batch: false
+  ## 迁移与无损替换（FR-IO-06、FR-MIG）
+  migration:
+    # 运行模式：OFF 仅本系统 / COEXIST 与仁科并存错峰 / SWITCHED 已切换
+    mode: OFF
+    # 错峰窗口（HH:mm，起止同值表示不启用），仅在 COEXIST 模式生效
+    quiet-window-start: '00:00'
+    quiet-window-end: '00:00'
+    # 迁移批量大小
+    batch-size: 500
+    # 一致性校验抽样条数
+    sample-size: 20
+    # 源库连接超时（秒）
+    connect-timeout-seconds: 5
+    # 单次迁移允许的最大时间范围（天）
+    max-range-days: 3650
+  ## 看门狗（FR-WD）
+  watchdog:
+    # 心跳与重启记录目录
+    dir: ./watchdog
+    # 被监控进程名
+    process-name: continew-admin
+    # 心跳写入间隔（秒）
+    heartbeat-interval-seconds: 10
+    # 心跳超时阈值（秒），超过判定失联
+    heartbeat-timeout-seconds: 120
+    # 每小时允许的最大重启次数（超过则停止自动拉起）
+    restart-limit-per-hour: 5
+    # 状态接口返回的历史重启记录条数
+    restart-history-limit: 50
+    # 启动后自动执行一次自检
+    self-check-on-startup: true
+    # 看门狗日志路径
+    watchdog-log: ./logs/watchdog.log
+    # 心跳接口共享令牌（为空不校验）
+    heartbeat-token:
+  ## 导入导出与备份恢复（FR-IO）
+  backup:
+    # 备份包目录
+    dir: ./backups
+    # 保留份数（超出按时间清理最旧的）
+    keep: 10
+    # 是否启用定时备份
+    auto-enabled: false
+    # 定时备份间隔（小时）
+    interval-hours: 24
+    # 是否把日志打进备份包
+    include-logs: true
+    # 备份包内日志总量上限（MB）
+    max-log-mb: 50
+    # 异地备份目录（可选）
+    remote-dir:
+    # 默认加密口令（非空则默认生成加密包，FR-IO-07）
+    encrypt-password:
+  ## 继电器控制（FR-RLY）
+  relay:
+    # 是否允许继电器写入（缺省值，优先取 SYSTEM 配置 RELAY_WRITE_ENABLED）
+    write-enabled: true
+    # 单次操作允许的最大执行时长（毫秒，FR-RLY-02 定时恢复上限）
+    max-duration-ms: 600000
+    # 状态查询一次最多读取的继电器路数
+    max-relays: 32
+  ## 设备校时（NFR-REL-06）
+  time-sync:
+    # 是否允许向设备下发时间（缺省值，优先取 SYSTEM 配置 TIME_SYNC_WRITE_ENABLED，FR-PROTO-09）
+    write-enabled: true
+    # 时间寄存器起始地址（标准规约 684 = 年，优先取 SYSTEM 配置 TIME_SYNC_REG_BASE）
+    register-base: 684
+    # 偏差容差（秒）：偏差不超过该值视为设备时间准确，自动校时跳过写入
+    tolerance-seconds: 5
+    # 是否启用自动定时校时（缺省值，优先取 SYSTEM 配置 TIME_SYNC_AUTO_ENABLED）
+    auto-enabled: false
+    # 自动校时计划（Spring cron 六段：秒 分 时 日 月 周），默认每天 03:00
+    auto-cron: "0 0 3 * * ?"
+    # 单次自动校时最多处理的设备数
+    max-devices-per-run: 500
+  ## 本地暂存与落地（FR-BUF）
+  staging:
+    # 暂存库文件路径（SQLite，WAL 模式）
+    database-path: data/buffer/jdrk-buffer.db
+    # 落地周期（毫秒，FR-BUF-02 定时批量上传）
+    flush-interval-ms: 1000
+    # 单批上传条数
+    batch-size: 500
+    # 暂存容量上限（行数），可被 STORAGE_BUFFER_MAX_ROWS 覆盖
+    max-rows: 1000000
+    # 内存待写入样本上限（背压保护）
+    max-in-memory-records: 200000
+    # 滚动清理周期（毫秒）
+    purge-interval-ms: 600000
+    # 历史数据保留天数，可被 STORAGE_RETAIN_DAYS 覆盖
+    retain-days: 90
+
+--- ### 认证配置
+auth:
+  ## 密码配置
+  password:
+    excludes:
+      - /auth/user/route
+      - /auth/user/info
+      - /auth/logout
+      - /system/user/password
+

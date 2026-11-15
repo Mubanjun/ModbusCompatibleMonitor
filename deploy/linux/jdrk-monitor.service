@@ -1,0 +1,24 @@
+[Unit]
+Description=JDRK 仁科兼容环境监测平台（自研看门狗 + 后端）
+After=network-online.target mysql.service redis-server.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubt
+WorkingDirectory=/home/ubt/jdrk
+Environment=DB_HOST=127.0.0.1
+Environment=DB_PWD=123456
+Environment=REDIS_HOST=127.0.0.1
+Environment=REDIS_PWD=123456
+Environment=JDRK_HOME=/home/ubt/jdrk
+Environment=JDRK_WATCHDOG_CONFIG=/home/ubt/jdrk/watchdog.properties
+# systemd 只负责引导与开机自启；后端守护/自恢复由自研看门狗负责（FR-WD-01、D17）
+ExecStart=/home/ubt/jdrk/start-watchdog.sh
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=40
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target

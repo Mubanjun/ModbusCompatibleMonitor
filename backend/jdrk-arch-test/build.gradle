@@ -1,0 +1,12 @@
+dependencies {
+    testImplementation project(':jdrk-common')
+    testImplementation project(':jdrk-protocol')
+    testImplementation project(':jdrk-device')
+    testImplementation project(':jdrk-storage')
+    testImplementation project(':jdrk-report')
+    testImplementation project(':jdrk-sync')
+    testImplementation project(':jdrk-module-api')
+    testImplementation 'com.tngtech.archunit:archunit-junit5:1.4.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

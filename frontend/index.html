@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+    <link rel="stylesheet" href="/static/css/loading.css" type="text/css" />
+    <title></title>
+  </head>
+
+  <body>
+    <div id="app">
+      <section class="init-box">
+        <div class="init-loading">
+          <img src="/static/images/loading.svg" class="init-loading-icon" alt="loading" />
+        </div>
+      </section>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+    <!--
+      原上游模板在这里注入百度统计（hm.baidu.com）脚本。本项目是内网/离线现场部署的
+      环境监测平台，保留它只会：①每翻一页都发一次外部请求并失败报错；
+      ②把管理端访问行为上报给第三方。已移除。
+    -->
+  </body>
+</html>

@@ -1,0 +1,7 @@
+// 同步编解码：目标库表定义、新旧判定与冲突策略、各方言 upsert 语句
+dependencies {
+    api project(':jdrk-report')
+
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

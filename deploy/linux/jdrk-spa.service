@@ -1,0 +1,16 @@
+[Unit]
+Description=JDRK Web UI 静态托管 + 同源反向代理（:5180，测试机架用）
+# O-9：不加这一行时，systemd 的默认启动限流会在反复重启后把单元锁死（start-limit hit）
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+WorkingDirectory=/home/wwt
+ExecStart=/usr/bin/python3 /home/wwt/spa_proxy.py
+# O-9：原先只在失败时重启，进程被正常终止（SIGTERM/退出码 0）后不会自动拉起，
+# Web 看板会静默不可用（实测 systemctl --user is-active jdrk-spa = inactive、:5180 无监听）。
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

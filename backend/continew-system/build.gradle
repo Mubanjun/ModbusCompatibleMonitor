@@ -1,0 +1,18 @@
+dependencies {
+    api project(':continew-common')
+    // 仁科协议与设备模型：通道配置需引用要素量程字典（ElementType / ValueEncoding / ElementRangeCatalog）
+    api project(':jdrk-device')
+    // 本地暂存（SQLite）与采集数据落地
+    api project(':jdrk-storage')
+    // 上报报文格式化与模板渲染
+    api project(':jdrk-report')
+    // 同步：目标库表定义、冲突策略与 upsert 语句
+    api project(':jdrk-sync')
+    api 'org.dromara.sms4j:sms4j-spring-boot-starter'
+    // 上报：MQTT 3.1.1 与 5.0 客户端（FR-RPT-01）
+    api 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
+    api 'org.eclipse.paho:org.eclipse.paho.mqttv5.client:1.2.5'
+    // 纯逻辑单测（与 jdrk-* 模块一致）
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

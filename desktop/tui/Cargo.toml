@@ -1,0 +1,26 @@
+[package]
+name = "jdrk-tui"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.77"
+description = "仁科兼容环境监测平台 TUI 终端管理端（FR-QT）"
+
+[[bin]]
+name = "jdrk-tui"
+path = "src/main.rs"
+
+[dependencies]
+ratatui = "0.29"
+crossterm = "0.28"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sysinfo = "0.33"
+clap = { version = "4", features = ["derive"] }
+webbrowser = "1"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

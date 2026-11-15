@@ -1,0 +1,22 @@
+rootProject.name = 'jdrk-backend'
+
+// 对应 Maven 的 <modules>，嵌套目录用冒号表示
+include 'continew-common'
+include 'continew-system'
+include 'continew-plugin:continew-plugin-open'
+include 'continew-plugin:continew-plugin-tenant'
+include 'continew-plugin:continew-plugin-schedule'
+include 'continew-plugin:continew-plugin-generator'
+include 'continew-extension:continew-extension-schedule-server'
+include 'continew-server'
+
+// 仁科协议与设备模型（原 jdrk-monitor 原型工程，已并入后端多模块）
+include 'jdrk-common'
+include 'jdrk-protocol'
+include 'jdrk-device'
+include 'jdrk-storage'
+include 'jdrk-report'
+include 'jdrk-sync'
+include 'jdrk-module-api'
+include 'jdrk-predict'
+include 'jdrk-arch-test'

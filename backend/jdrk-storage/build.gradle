@@ -1,0 +1,10 @@
+// 本地暂存：SQLite（WAL）落盘缓冲，保证断网与崩溃场景下已采集数据不丢失（FR-BUF-01/04/05）
+dependencies {
+    api project(':jdrk-device')
+
+    // 本地暂存库（DR-01 明确要求 SQLite + WAL）
+    api 'org.xerial:sqlite-jdbc:3.50.3.0'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

@@ -1,0 +1,114 @@
+# ===================== 依赖与构建产物 =====================
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/coverage/
+backend/.gradle/
+backend/build/
+backend/*/build/
+backend/*/*/build/
+*.class
+
+# 归档包不入库；但 Gradle Wrapper 的 jar 必须入库，故放在通用规则之后覆盖
+*.jar
+*.war
+!backend/gradle/wrapper/gradle-wrapper.jar
+
+# ===================== 本机工具链缓存（体积大，可重建）=====================
+# 这些目录是为绕过沙箱限制而放在工作区内的，属于本机环境产物，不应入库
+.gradle-home/
+.cargo-home/
+.pnpm-store/
+.pnpm-home/
+.npm-cache/
+.xdg-cache/
+.xdg-data/
+
+# ===================== 运行时数据与临时工作区 =====================
+# 运行时目录一律带前导斜杠锚定仓库根目录：不带斜杠会误伤同名源码目录
+# （已踩两次：watchdog/ 误伤 backend/**/watchdog 与 views/env/watchdog，data/ 误伤 runtime/data 与 views/env/data）
+/data/
+/desktop/tui/target/
+# _extract/ 只是验收运行的产物/工作区（日志、截图、一次性脚本）；
+# 验收套件本身已入库在 tools/acceptance/scripts/，换机器后从这里复跑（《软件质量报告》遗留问题 1）。
+/_extract/
+/logs/
+*.log
+*.log.gz
+__pycache__/
+
+# ===================== IDE 与操作系统 =====================
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ===================== 厂商大体积二进制（另行归档，不入库）=====================
+# 替换对象的安装包约 372MB、厂商 SDK 与调试工具约 69MB，均远超仓库合理体积
+RS-RJ-K仁科环境监控平台/RS-RJ-K环境监控平台安装包/
+智能监控主机资料包/设备二次开发SDK/
+智能监控主机资料包/智能监控主机资料包/
+
+# ===================== 上游镜像（独立 git 仓库，按需克隆）=====================
+# third-party/continew-admin 自带 .git，直接入库会形成嵌套仓库；它仅用于比对，可随时重新克隆
+third-party/continew-admin/
+
+# ===================== 发布包 =====================
+# dist/ 由 gradle :continew-server:distRelease 生成（jar + jlink 精简运行时），可随时重建
+/dist/
+
+# ===================== 运行时产物 =====================
+# 备份包（FR-IO）与看门狗运行时文件（FR-WD）；同样必须锚定仓库根目录
+/backups/
+/watchdog/
+/watchdog-hangtest/
+
+# ===================== 长期功能测试与构建 =====================
+# 目标机口令配置（tools/test/test-target.env.example 提供模板）；构建临时目录
+/tools/test/test-target.env
+/.tmp/
+
+# ===================== 本地代理工具 =====================
+# .claude/ 存放本机代理的技能包与模板（数十 MB），属工具配置而非项目源码
+/.claude/
+
+# ===================== 公开仓库内容边界 =====================
+# 本仓库面向公开托管，只保留产品源码、部署脚本与对外文档。
+# 以下内容不入库：内部过程/交接/审计文档、验收与一次性测试脚本、
+# 现场凭据、厂商资料与安装包、验收截图。
+
+# 文档：白名单方式，仅保留对外文档
+/docs/*
+!/docs/仁科兼容环境监测平台需求规格说明书.md
+!/docs/现场部署与验收手册.md
+!/docs/需求实现核查表.md
+!/docs/技术方案-前后端分离与多机接入-讨论稿.md
+
+# 工具：仅保留可复用的 Docker 构建脚本
+/tools/*
+!/tools/docker/
+
+# 厂商资料与安装包（版权与体积原因，不入公开仓库）
+/1-8主机传感器配置/
+/分析使用的包文件/
+/智能监控主机资料包/
+/RS-RJ-K仁科环境监控平台/
+
+# 验收截图与前端模板演示资源
+/docs/acceptance/
+/frontend/.image/
+/frontend/package-lock.json
+
+# 上游模板自带的过程文档（与本项目无关）
+/backend/CHANGELOG.md
+/backend/CODE_OF_CONDUCT.md
+/backend/CONTRIBUTING.md
+/backend/SECURITY.md
+/backend/README.md
+/frontend/CHANGELOG.md
+/frontend/README.md
+/frontend/CLAUDE.md
+/frontend/AGENTS.md

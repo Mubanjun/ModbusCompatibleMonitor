@@ -1,0 +1,6 @@
+dependencies {
+    // snail-job 服务端 starter 未被 ContiNew Starter BOM 管理，需显式声明版本
+    // 版本与上游模块 POM 中的 <snail-job.version>1.8.0</snail-job.version> 保持一致
+    api 'com.aizuda:snail-job-server-starter:1.8.0'
+    api 'org.liquibase:liquibase-core'
+}

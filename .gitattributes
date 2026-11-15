@@ -1,0 +1,25 @@
+# 统一换行符：仓库内文本一律存 LF，避免 Windows/Linux 协作时整文件 diff
+* text=auto eol=lf
+
+# Windows 批处理与脚本必须用 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+gradlew.bat text eol=crlf
+gradlew text eol=lf
+
+# 明确的二进制类型，避免 Git 尝试做行尾转换或文本 diff
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.docx binary
+*.xlsx binary
+*.jar binary
+*.zip binary
+*.exe binary
+*.pcapng binary
+*.woff binary
+*.woff2 binary
+*.ttf binary

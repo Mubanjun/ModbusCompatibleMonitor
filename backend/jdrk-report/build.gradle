@@ -1,0 +1,7 @@
+// 上报编解码：主题/模板渲染、JSON/KV/自定义报文格式化、字段映射与裁剪
+dependencies {
+    api project(':jdrk-common')
+
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

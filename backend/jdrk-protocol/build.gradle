@@ -1,0 +1,15 @@
+// 仁科协议编解码与通讯：RS-Modbus 从站帧、2404 网络设备帧、要素值编码，
+// 以及串口 / TCP 传输层与 Modbus 协议实现
+dependencies {
+    api project(':jdrk-common')
+
+    // 串口通讯（RS-485 半双工）
+    api 'com.fazecast:jSerialComm:2.11.4'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+dependencies {
+    api project(':jdrk-common')
+    implementation 'org.slf4j:slf4j-api'
+}

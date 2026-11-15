@@ -1,0 +1,7 @@
+dependencies {
+    api project(':continew-common')
+    api 'com.aizuda:snail-job-client-starter'
+    api 'com.aizuda:snail-job-client-retry-core'
+    api 'com.aizuda:snail-job-client-job-core'
+    api 'org.springframework.cloud:spring-cloud-starter-openfeign'
+}
